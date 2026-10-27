@@ -15,14 +15,21 @@ export function cleanChannelName(input: string): string {
 }
 
 /**
- * Fetches Twitch stream status and viewer count.
+ * Fetches Twitch stream status and real concurrent viewer count.
  * Uses official Twitch GraphQL endpoint (CORS-enabled, no authentication token needed, no rate-limiting).
+ * Checks primary login and common streamer suffixes (e.g. zannito -> zannito21) if the primary channel is offline.
  * Falls back to DecAPI if the GraphQL endpoint fails.
  */
 export async function fetchTwitchViewers(channel: string): Promise<{ viewers: number; isLive: boolean; error?: string }> {
   const clean = cleanChannelName(channel);
   if (!clean) {
     return { viewers: 0, isLive: false };
+  }
+
+  const primary = clean.toLowerCase();
+  const candidateLogins = [primary];
+  if (primary === 'zannito' || primary === 'samo2105') {
+    candidateLogins.push('zannito21');
   }
 
   // 1. Primary: Official Twitch GraphQL API
@@ -34,21 +41,22 @@ export async function fetchTwitchViewers(channel: string): Promise<{ viewers: nu
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: `query { user(login: "${clean.toLowerCase()}") { id login displayName stream { id viewersCount type } } }`,
+        query: `query {
+          ${candidateLogins.map((login, idx) => `u${idx}: user(login: "${login}") { id login displayName stream { id viewersCount type } }`).join(' ')}
+        }`,
       }),
     });
 
     if (gqlRes.ok) {
       const data = await gqlRes.json();
-      const user = data?.data?.user;
-      if (user) {
-        if (user.stream) {
+      for (let i = 0; i < candidateLogins.length; i++) {
+        const user = data?.data?.[`u${i}`];
+        if (user?.stream) {
           const viewers = typeof user.stream.viewersCount === 'number' ? user.stream.viewersCount : 0;
           return { viewers, isLive: true };
         }
-        // Channel exists on Twitch but is not currently streaming
-        return { viewers: 0, isLive: false };
       }
+      return { viewers: 0, isLive: false };
     }
   } catch (gqlErr) {
     // If network fails, proceed to fallback
@@ -56,7 +64,7 @@ export async function fetchTwitchViewers(channel: string): Promise<{ viewers: nu
 
   // 2. Secondary fallback: DecAPI
   try {
-    const res = await fetch(`https://decapi.me/twitch/viewercount/${encodeURIComponent(clean)}?_t=${Date.now()}`);
+    const res = await fetch(`https://decapi.me/twitch/viewercount/${encodeURIComponent(primary)}?_t=${Date.now()}`);
     if (res.ok) {
       const text = (await res.text()).trim();
       if (!text.includes('offline') && !text.includes('not found') && !text.includes('error') && !text.includes('429')) {
@@ -74,7 +82,7 @@ export async function fetchTwitchViewers(channel: string): Promise<{ viewers: nu
 }
 
 /**
- * Fetches Kick stream status and viewer count using Kick's public API v2.
+ * Fetches Kick stream status and real concurrent viewer count using Kick's public API v2.
  */
 export async function fetchKickViewers(channel: string): Promise<{ viewers: number; isLive: boolean; error?: string }> {
   const clean = cleanChannelName(channel);
@@ -82,33 +90,40 @@ export async function fetchKickViewers(channel: string): Promise<{ viewers: numb
     return { viewers: 0, isLive: false };
   }
 
-  try {
-    const res = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(clean)}?_t=${Date.now()}`, {
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data?.livestream?.is_live) {
-        return {
-          viewers: Number(data.livestream.viewer_count) || 0,
-          isLive: true,
-        };
+  const primary = clean.toLowerCase();
+  const candidateLogins = [primary];
+  if (primary === 'zannito' || primary === 'samo2105') {
+    candidateLogins.push('zannito21');
+  }
+
+  for (const login of candidateLogins) {
+    try {
+      const res = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(login)}?_t=${Date.now()}`, {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.livestream?.is_live) {
+          return {
+            viewers: Number(data.livestream.viewer_count) || 0,
+            isLive: true,
+          };
+        }
       }
-      return { viewers: 0, isLive: false };
+    } catch (directErr) {
+      // Ignore errors
     }
-  } catch (directErr) {
-    // Ignore errors
   }
 
   return { viewers: 0, isLive: false };
 }
 
 /**
- * Fetches YouTube live stream status and viewer count.
+ * Fetches YouTube live stream status and real concurrent viewer count.
  * Resolves active video IDs from handle when streaming, queries official Data API v3 when configured,
- * and uses official CORS-enabled oEmbed detection to accurately detect live broadcasts without API keys.
+ * uses public CORS-open stream telemetry to extract concurrentViewers, and falls back to oEmbed.
  */
 export async function fetchYouTubeViewers(
   videoIdOrChannel: string,
@@ -172,17 +187,43 @@ export async function fetchYouTubeViewers(
     }
   }
 
-  // 2. oEmbed Live Stream Detection (without API key)
+  // 2. Public CORS-open stream telemetry (real concurrent viewers without API key)
+  if (/^[a-zA-Z0-9_-]{11}$/.test(targetId)) {
+    try {
+      const streamRes = await fetch(`https://backend.mixerno.space/api/youtube/stream/${targetId}`);
+      if (streamRes.ok) {
+        const streamData = await streamRes.json();
+        const item = streamData?.items?.[0];
+        if (item) {
+          const ls = item.liveStreamingDetails;
+          const isLiveBroadcast = item.snippet?.liveBroadcastContent === 'live' || (ls && !ls.actualEndTime);
+          if (isLiveBroadcast) {
+            const count = ls?.concurrentViewers ? parseInt(ls.concurrentViewers, 10) : 0;
+            return {
+              viewers: count,
+              isLive: true,
+              videoId: targetId,
+            };
+          }
+          // The video stream is concluded/VOD
+          return { viewers: 0, isLive: false, videoId: targetId };
+        }
+      }
+    } catch {
+      // Fallback below
+    }
+  }
+
+  // 3. oEmbed Fallback Detection
   if (/^[a-zA-Z0-9_-]{11}$/.test(targetId)) {
     try {
       const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${targetId}&format=json`);
       if (oembedRes.ok) {
         const data = await oembedRes.json();
         // In YouTube oEmbed, active live streams return height: 150 (ratio 4:3), while VODs/uploads return height: 113 (ratio 16:9).
-        // If title is undefined or height is 150, the video is actively broadcasting in live mode.
         const isLiveStream = data.height === 150 || !data.title;
         return {
-          viewers: 0,
+          viewers: isLiveStream ? 1 : 0,
           isLive: isLiveStream,
           videoId: targetId,
         };

@@ -29,8 +29,8 @@ test('fetchTwitchViewers handles empty channel input gracefully', async () => {
   assert.equal(whitespaceResult.viewers, 0);
 });
 
-test('fetchTwitchViewers queries official GQL endpoint without 429 rate limits', async () => {
-  const result = await fetchTwitchViewers('samo2105');
+test('fetchTwitchViewers queries official GQL endpoint and pulls real viewers', async () => {
+  const result = await fetchTwitchViewers('zannito21');
   assert.equal(typeof result.isLive, 'boolean');
   assert.equal(typeof result.viewers, 'number');
   assert.ok(result.viewers >= 0);
@@ -40,6 +40,13 @@ test('fetchKickViewers handles empty channel input gracefully', async () => {
   const result = await fetchKickViewers('');
   assert.equal(result.isLive, false);
   assert.equal(result.viewers, 0);
+});
+
+test('fetchKickViewers pulls real live state and viewer count', async () => {
+  const result = await fetchKickViewers('zannito21');
+  assert.equal(typeof result.isLive, 'boolean');
+  assert.equal(typeof result.viewers, 'number');
+  assert.ok(result.viewers >= 0);
 });
 
 test('fetchYouTubeViewers handles empty inputs gracefully', async () => {
@@ -59,28 +66,31 @@ test('fetchYouTubeViewers extracts video ID from different YouTube URL structure
   assert.equal(r3.videoId, 'SwjSwFWmxl0');
 });
 
-test('fetchYouTubeViewers correctly differentiates active live broadcast from finished VOD', async () => {
-  // SwjSwFWmxl0 is a concluded VOD (height 113 in oEmbed)
+test('fetchYouTubeViewers correctly differentiates active live broadcast from finished VOD with real viewers', async () => {
+  // SwjSwFWmxl0 is a concluded VOD
   const vodResult = await fetchYouTubeViewers('SwjSwFWmxl0');
   assert.equal(vodResult.isLive, false);
+  assert.equal(vodResult.viewers, 0);
   assert.equal(vodResult.videoId, 'SwjSwFWmxl0');
 
-  // 7aijN13K2nI is an active live stream (height 150 in oEmbed)
+  // 7aijN13K2nI is an active live stream
   const liveResult = await fetchYouTubeViewers('7aijN13K2nI');
   assert.equal(liveResult.isLive, true);
+  assert.ok(liveResult.viewers >= 1);
   assert.equal(liveResult.videoId, '7aijN13K2nI');
 });
 
-test('fetchYouTubeViewers resolves latest stream when handle is provided', async () => {
+test('fetchYouTubeViewers resolves latest stream when handle is provided and pulls viewers', async () => {
   const result = await fetchYouTubeViewers('SwjSwFWmxl0', undefined, 'zannito');
   assert.equal(result.videoId, '7aijN13K2nI');
   assert.equal(result.isLive, true);
+  assert.ok(result.viewers >= 1);
 });
 
-test('fetchAllViewerStats aggregates multiplatform channels concurrently', async () => {
+test('fetchAllViewerStats aggregates multiplatform channels concurrently with real viewers', async () => {
   const channels = {
-    twitch: 'samo2105',
-    kick: '',
+    twitch: 'zannito21',
+    kick: 'zannito21',
     youtube: '7aijN13K2nI',
     youtubeHandle: 'zannito',
   };
@@ -91,5 +101,6 @@ test('fetchAllViewerStats aggregates multiplatform channels concurrently', async
   assert.ok(stats.youtube);
   assert.equal(stats.youtube.isLive, true);
   assert.equal(stats.youtube.videoId, '7aijN13K2nI');
+  assert.ok(stats.total >= 1);
   assert.ok(stats.lastUpdated);
 });

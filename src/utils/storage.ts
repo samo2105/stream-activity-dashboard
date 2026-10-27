@@ -12,9 +12,9 @@ export const DEFAULT_CONFIG: DashboardConfig = {
   globalFontScale: 1.0,
   obs: DEFAULT_OBS_CONFIG,
   channels: {
-    twitch: 'samo2105',
-    kick: '',
-    youtube: 'SwjSwFWmxl0',
+    twitch: 'zannito21',
+    kick: 'zannito21',
+    youtube: '7aijN13K2nI',
     youtubeHandle: 'zannito',
     streamlabsToken: DEFAULT_STREAMLABS_TOKEN,
   },
@@ -37,9 +37,9 @@ export function loadDashboardConfig(): DashboardConfig {
           themeMode: parsedLegacy.themeMode || 'normal',
           counterSize: parsedLegacy.counterSize || 'md',
           channels: {
-            twitch: parsedLegacy.channels?.twitch || 'samo2105',
-            kick: parsedLegacy.channels?.kick || '',
-            youtube: parsedLegacy.channels?.youtube || 'SwjSwFWmxl0',
+            twitch: parsedLegacy.channels?.twitch === 'samo2105' || !parsedLegacy.channels?.twitch ? 'zannito21' : parsedLegacy.channels.twitch,
+            kick: parsedLegacy.channels?.kick || 'zannito21',
+            youtube: parsedLegacy.channels?.youtube === 'SwjSwFWmxl0' || !parsedLegacy.channels?.youtube ? '7aijN13K2nI' : parsedLegacy.channels.youtube,
             youtubeHandle: parsedLegacy.channels?.youtubeHandle || 'zannito',
             streamlabsToken: parsedLegacy.channels?.streamlabsToken || DEFAULT_STREAMLABS_TOKEN,
           },
@@ -59,10 +59,10 @@ export function loadDashboardConfig(): DashboardConfig {
       globalFontScale: typeof parsed.globalFontScale === 'number' ? parsed.globalFontScale : 1.0,
       obs: parsed.obs || DEFAULT_OBS_CONFIG,
       channels: {
-        twitch: parsed.channels?.twitch ?? DEFAULT_CONFIG.channels.twitch,
-        kick: parsed.channels?.kick ?? DEFAULT_CONFIG.channels.kick,
-        youtube: parsed.channels?.youtube ?? DEFAULT_CONFIG.channels.youtube,
-        youtubeHandle: parsed.channels?.youtubeHandle ?? DEFAULT_CONFIG.channels.youtubeHandle,
+        twitch: parsed.channels?.twitch === 'samo2105' || !parsed.channels?.twitch ? 'zannito21' : parsed.channels.twitch,
+        kick: !parsed.channels?.kick || parsed.channels?.kick === 'samo2105' ? 'zannito21' : parsed.channels.kick,
+        youtube: parsed.channels?.youtube === 'SwjSwFWmxl0' || !parsed.channels?.youtube ? '7aijN13K2nI' : parsed.channels.youtube,
+        youtubeHandle: parsed.channels?.youtubeHandle || 'zannito',
         youtubeApiKey: parsed.channels?.youtubeApiKey || undefined,
         streamlabsToken: resolvedToken,
       },
@@ -70,7 +70,11 @@ export function loadDashboardConfig(): DashboardConfig {
         ? parsed.widgets.map((w: WidgetItem) => {
             // Fix broken 404 kick demo
             if (w.url?.includes('kick.com/popout/samo2105/chat')) {
-              return { ...w, url: 'about:blank' };
+              return { ...w, url: 'https://kick.com/popout/zannito21/chat' };
+            }
+            // Upgrade legacy YouTube video ID to active live stream ID
+            if (w.url?.includes('youtube.com/live_chat') && w.url?.includes('v=SwjSwFWmxl0')) {
+              w = { ...w, url: w.url.replace('v=SwjSwFWmxl0', 'v=7aijN13K2nI') };
             }
             // Automatically upgrade legacy broken popout URLs to embed
             if (w.url?.includes('twitch.tv/popout/')) {
