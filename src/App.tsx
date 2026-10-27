@@ -234,6 +234,45 @@ export function App() {
       }
       return newStats;
     });
+
+    // Auto-sync active YouTube live broadcast ID to widgets if detected
+    if (newStats.youtube.isLive && newStats.youtube.videoId) {
+      const activeVideoId = newStats.youtube.videoId;
+      setConfig((prev) => {
+        let changed = false;
+        let newChannels = prev.channels;
+        if (prev.channels.youtube !== activeVideoId) {
+          newChannels = { ...prev.channels, youtube: activeVideoId };
+          changed = true;
+        }
+
+        const currentHost = typeof window !== 'undefined' ? (window.location.hostname || 'localhost') : 'localhost';
+        const updatedWidgets = prev.widgets.map((w) => {
+          if (w.platform === 'youtube' || w.url.includes('youtube.com/live_chat')) {
+            const currentUrlId = w.url.match(/v=([a-zA-Z0-9_-]{11})/)?.[1];
+            if (currentUrlId !== activeVideoId) {
+              changed = true;
+              const displayTitle = prev.channels.youtubeHandle ? `@${prev.channels.youtubeHandle.replace(/^@/, '')}` : activeVideoId;
+              return {
+                ...w,
+                title: `YouTube Live Chat (${displayTitle})`,
+                url: `https://www.youtube.com/live_chat?v=${encodeURIComponent(activeVideoId)}&embed_domain=${encodeURIComponent(currentHost)}&dark_theme=1`,
+              };
+            }
+          }
+          return w;
+        });
+
+        if (changed) {
+          return {
+            ...prev,
+            channels: newChannels,
+            widgets: updatedWidgets,
+          };
+        }
+        return prev;
+      });
+    }
   };
 
   useEffect(() => {

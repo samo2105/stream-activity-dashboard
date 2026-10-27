@@ -44,6 +44,7 @@ export interface PlatformViewerData {
   isLive: boolean;
   loading: boolean;
   error?: string;
+  videoId?: string;
 }
 
 export interface ViewerStats {
