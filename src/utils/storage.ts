@@ -7,6 +7,7 @@ export const DEFAULT_CONFIG: DashboardConfig = {
   columns: 3,
   autoRefreshInterval: 0,
   themeMode: 'normal',
+  counterSize: 'md',
   channels: {
     twitch: 'samo2105',
     kick: '',
@@ -31,6 +32,7 @@ export function loadDashboardConfig(): DashboardConfig {
           columns: parsedLegacy.columns || 3,
           autoRefreshInterval: parsedLegacy.autoRefreshInterval || 0,
           themeMode: parsedLegacy.themeMode || 'normal',
+          counterSize: parsedLegacy.counterSize || 'md',
           channels: {
             twitch: parsedLegacy.channels?.twitch || 'samo2105',
             kick: parsedLegacy.channels?.kick || '',
@@ -50,6 +52,7 @@ export function loadDashboardConfig(): DashboardConfig {
       columns: parsed.columns || 3,
       autoRefreshInterval: parsed.autoRefreshInterval || 0,
       themeMode: parsed.themeMode || 'normal',
+      counterSize: parsed.counterSize || 'md',
       channels: {
         twitch: parsed.channels?.twitch ?? DEFAULT_CONFIG.channels.twitch,
         kick: parsed.channels?.kick ?? DEFAULT_CONFIG.channels.kick,

@@ -12,6 +12,8 @@ export type WidgetPlatform =
 
 export type ThemeMode = 'normal' | 'dark' | 'light';
 
+export type CounterSize = 'sm' | 'md' | 'lg' | 'xl';
+
 export interface WidgetItem {
   id: string;
   title: string;
@@ -55,6 +57,7 @@ export interface DashboardConfig {
   columns: GridColumns;
   autoRefreshInterval: number; // in seconds (0 = off)
   themeMode?: ThemeMode; // 'normal' | 'dark' | 'light'
+  counterSize?: CounterSize; // 'sm' | 'md' | 'lg' | 'xl'
   channels: ChannelsConfig;
   widgets: WidgetItem[];
 }

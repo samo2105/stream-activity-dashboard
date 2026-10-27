@@ -6,7 +6,7 @@ import { AddWidgetModal } from './components/AddWidgetModal';
 import { PresetsModal } from './components/PresetsModal';
 import { SettingsModal } from './components/SettingsModal';
 import { ProfileModal } from './components/ProfileModal';
-import { DashboardConfig, WidgetItem, GridColumns, ChannelsConfig, ThemeMode } from './types/widget';
+import { DashboardConfig, WidgetItem, GridColumns, ChannelsConfig, ThemeMode, CounterSize } from './types/widget';
 import { loadDashboardConfig, saveDashboardConfig, DEFAULT_CONFIG } from './utils/storage';
 import { ShieldCheck, Sparkles, Layers } from 'lucide-react';
 
@@ -190,6 +190,11 @@ export function App() {
     }));
   };
 
+  // Handle Counter Size Change (sm | md | lg | xl)
+  const handleUpdateCounterSize = (counterSize: CounterSize) => {
+    setConfig((prev) => ({ ...prev, counterSize }));
+  };
+
   const currentThemeMode: ThemeMode = config.themeMode || 'normal';
   const isLight = currentThemeMode === 'light';
   const isDark = currentThemeMode === 'dark';
@@ -239,7 +244,9 @@ export function App() {
       <ViewerBar
         channels={config.channels}
         themeMode={currentThemeMode}
+        counterSize={config.counterSize || 'md'}
         onUpdateChannels={handleUpdateChannels}
+        onUpdateCounterSize={handleUpdateCounterSize}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
       />
 

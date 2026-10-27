@@ -6,9 +6,10 @@ import {
   RotateCcw, 
   ShieldCheck, 
   Check,
-  Tv2
+  Tv2,
+  Sliders
 } from 'lucide-react';
-import { DashboardConfig, ChannelsConfig } from '../types/widget';
+import { DashboardConfig, ChannelsConfig, CounterSize } from '../types/widget';
 import { exportConfigToFile, parseConfigFile } from '../utils/storage';
 
 interface SettingsModalProps {
@@ -156,6 +157,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               >
                 Guardar Canales
               </button>
+            </div>
+          </div>
+
+          {/* Viewer Counters Sizing Setting */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Sliders className="w-4 h-4 text-purple-400" />
+              Tamaño de Conteos de Viewers
+            </h3>
+            <p className="text-xs text-zinc-400">
+              Personaliza el tamaño de los números y chips de espectadores en la barra superior.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              {[
+                { size: 'sm', label: 'Pequeño', desc: 'Compacto (S)' },
+                { size: 'md', label: 'Normal', desc: 'Estándar (M)' },
+                { size: 'lg', label: 'Grande', desc: 'Destacado (L)' },
+                { size: 'xl', label: 'Extra Grande', desc: 'Para stream (XL)' },
+              ].map(({ size, label, desc }) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => {
+                    onUpdateConfig({ ...config, counterSize: size as CounterSize });
+                    setStatusMsg(`Tamaño de conteos actualizado a ${label} (${size.toUpperCase()}).`);
+                  }}
+                  className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all ${
+                    (config.counterSize || 'md') === size
+                      ? 'bg-purple-600/20 border-purple-500 text-white ring-1 ring-purple-500/40 shadow-sm'
+                      : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                  }`}
+                >
+                  <span className="text-xs font-bold uppercase">{label}</span>
+                  <span className="text-[10px] text-zinc-500 mt-0.5">{desc}</span>
+                </button>
+              ))}
             </div>
           </div>
 
