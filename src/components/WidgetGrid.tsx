@@ -7,10 +7,12 @@ interface WidgetGridProps {
   widgets: WidgetItem[];
   columns: GridColumns;
   dashboardTheme?: ThemeMode;
+  dashboardFontScale?: number;
   onDeleteWidget: (id: string) => void;
   onEditWidget: (widget: WidgetItem) => void;
   onToggleSpan: (id: string) => void;
   onCycleTheme: (id: string) => void;
+  onUpdateFontScale?: (id: string, scale: number) => void;
   onOpenAddModal: () => void;
   onOpenPresetsModal: () => void;
 }
@@ -19,10 +21,12 @@ export const WidgetGrid: React.FC<WidgetGridProps> = ({
   widgets,
   columns,
   dashboardTheme,
+  dashboardFontScale,
   onDeleteWidget,
   onEditWidget,
   onToggleSpan,
   onCycleTheme,
+  onUpdateFontScale,
   onOpenAddModal,
   onOpenPresetsModal,
 }) => {
@@ -82,10 +86,12 @@ export const WidgetGrid: React.FC<WidgetGridProps> = ({
           key={widget.id}
           widget={widget}
           dashboardTheme={dashboardTheme}
+          dashboardFontScale={dashboardFontScale}
           onDelete={onDeleteWidget}
           onEdit={onEditWidget}
           onToggleSpan={onToggleSpan}
           onCycleTheme={onCycleTheme}
+          onUpdateFontScale={onUpdateFontScale}
         />
       ))}
     </div>

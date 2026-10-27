@@ -11,6 +11,9 @@ import { StreamHealthSummary } from './types/streamHealth';
 import { loadDashboardConfig, saveDashboardConfig, DEFAULT_CONFIG } from './utils/storage';
 import { runFullHealthDiagnostics } from './utils/streamHealth';
 import { StreamHealthModal } from './components/StreamHealthModal';
+import { ObsModal } from './components/ObsModal';
+import type { ObsConfig, ObsConnectionStatus, ObsStreamStats } from './types/obs';
+import { getObsClient, DEFAULT_OBS_CONFIG, INITIAL_OBS_STATS } from './utils/obsWebSocket';
 import { ShieldCheck, Sparkles, Layers } from 'lucide-react';
 
 export function App() {
@@ -20,8 +23,12 @@ export function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [isHealthModalOpen, setIsHealthModalOpen] = useState<boolean>(false);
+  const [isObsModalOpen, setIsObsModalOpen] = useState<boolean>(false);
   const [healthSummary, setHealthSummary] = useState<StreamHealthSummary | null>(null);
   const [streamAlerts, setStreamAlerts] = useState<string[]>([]);
+  const [obsStatus, setObsStatus] = useState<ObsConnectionStatus>('disconnected');
+  const [obsStats, setObsStats] = useState<ObsStreamStats>(INITIAL_OBS_STATS);
+  const [obsErrorMsg, setObsErrorMsg] = useState<string | undefined>();
   const [editingWidget, setEditingWidget] = useState<WidgetItem | null>(null);
 
   // Sync with localStorage on config changes
@@ -220,6 +227,66 @@ export function App() {
     return () => clearInterval(healthInterval);
   }, []);
 
+  // OBS WebSocket Integration Setup
+  useEffect(() => {
+    const obsConfig = config.obs || DEFAULT_OBS_CONFIG;
+    const client = getObsClient(obsConfig);
+
+    const unsubStatus = client.onStatusChange((status, err) => {
+      setObsStatus(status);
+      setObsErrorMsg(err);
+    });
+
+    const unsubStats = client.onStatsUpdate((newStats) => {
+      setObsStats(newStats);
+    });
+
+    if (obsConfig.autoConnect && obsConfig.enabled) {
+      client.connect();
+    }
+
+    return () => {
+      unsubStatus();
+      unsubStats();
+    };
+  }, [config.obs]);
+
+  const handleConnectObs = () => {
+    const client = getObsClient(config.obs || DEFAULT_OBS_CONFIG);
+    client.connect();
+  };
+
+  const handleDisconnectObs = () => {
+    const client = getObsClient(config.obs || DEFAULT_OBS_CONFIG);
+    client.disconnect();
+  };
+
+  const handleSaveObsConfig = (newObsConfig: ObsConfig) => {
+    setConfig((prev) => ({ ...prev, obs: newObsConfig }));
+    const client = getObsClient(newObsConfig);
+    client.updateConfig(newObsConfig);
+    client.connect();
+  };
+
+  const handleToggleObsStream = async () => {
+    const client = getObsClient(config.obs || DEFAULT_OBS_CONFIG);
+    await client.toggleStream();
+  };
+
+  const handleToggleObsRecord = async () => {
+    const client = getObsClient(config.obs || DEFAULT_OBS_CONFIG);
+    await client.toggleRecord();
+  };
+
+  const handleUpdateWidgetFontScale = (widgetId: string, scale: number) => {
+    setConfig((prev) => ({
+      ...prev,
+      widgets: prev.widgets.map((w) =>
+        w.id === widgetId ? { ...w, fontScale: scale } : w
+      ),
+    }));
+  };
+
   const currentThemeMode: ThemeMode = config.themeMode || 'normal';
   const isLight = currentThemeMode === 'light';
   const isDark = currentThemeMode === 'dark';
@@ -272,10 +339,13 @@ export function App() {
         counterSize={config.counterSize || 'md'}
         healthSummary={healthSummary}
         streamAlerts={streamAlerts}
+        obsStatus={obsStatus}
+        obsStats={obsStats}
         onUpdateChannels={handleUpdateChannels}
         onUpdateCounterSize={handleUpdateCounterSize}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
         onOpenHealthModal={() => setIsHealthModalOpen(true)}
+        onOpenObsModal={() => setIsObsModalOpen(true)}
       />
 
       {/* Main Stream Activity Grid */}
@@ -284,10 +354,12 @@ export function App() {
           widgets={config.widgets}
           columns={config.columns}
           dashboardTheme={currentThemeMode}
+          dashboardFontScale={config.globalFontScale || 1.0}
           onDeleteWidget={handleDeleteWidget}
           onEditWidget={handleEditWidget}
           onToggleSpan={handleToggleSpan}
           onCycleTheme={handleCycleWidgetTheme}
+          onUpdateFontScale={handleUpdateWidgetFontScale}
           onOpenAddModal={handleOpenAdd}
           onOpenPresetsModal={() => setIsPresetsModalOpen(true)}
         />
@@ -372,6 +444,10 @@ export function App() {
           setIsSettingsModalOpen(false);
           setIsHealthModalOpen(true);
         }}
+        onOpenObsModal={() => {
+          setIsSettingsModalOpen(false);
+          setIsObsModalOpen(true);
+        }}
       />
 
       <StreamHealthModal
@@ -380,6 +456,20 @@ export function App() {
         healthSummary={healthSummary}
         onRefreshHealth={handleRefreshHealth}
         streamAlerts={streamAlerts}
+      />
+
+      <ObsModal
+        isOpen={isObsModalOpen}
+        onClose={() => setIsObsModalOpen(false)}
+        config={config.obs || DEFAULT_OBS_CONFIG}
+        status={obsStatus}
+        stats={obsStats}
+        errorMessage={obsErrorMsg}
+        onConnect={handleConnectObs}
+        onDisconnect={handleDisconnectObs}
+        onSaveConfig={handleSaveObsConfig}
+        onToggleStream={handleToggleObsStream}
+        onToggleRecord={handleToggleObsRecord}
       />
     </div>
   );

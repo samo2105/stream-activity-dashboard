@@ -20,6 +20,7 @@ interface SettingsModalProps {
   onUpdateConfig: (newConfig: DashboardConfig) => void;
   onResetDefaults: () => void;
   onOpenHealthModal?: () => void;
+  onOpenObsModal?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -29,6 +30,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onUpdateConfig,
   onResetDefaults,
   onOpenHealthModal,
+  onOpenObsModal,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -198,6 +200,70 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               ))}
             </div>
           </div>
+
+          {/* Global Frame Font Scale / Zoom Setting */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Sliders className="w-4 h-4 text-purple-400" />
+                Escala Global de Fuente en Frames
+              </span>
+              <span className="text-purple-400 font-mono font-bold text-xs">
+                {Math.round((config.globalFontScale || 1.0) * 100)}%
+              </span>
+            </h3>
+            <p className="text-xs text-zinc-400">
+              Ajusta el tamaño base de la fuente y contenido para todos los widgets embebidos (chats y alertas).
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+              {[
+                { scale: 0.85, label: '85%', desc: 'Compacto' },
+                { scale: 1.0, label: '100%', desc: 'Normal' },
+                { scale: 1.15, label: '115%', desc: 'Medio' },
+                { scale: 1.3, label: '130%', desc: 'Grande' },
+                { scale: 1.5, label: '150%', desc: 'Gigante' },
+              ].map(({ scale, label, desc }) => (
+                <button
+                  key={scale}
+                  type="button"
+                  onClick={() => {
+                    onUpdateConfig({ ...config, globalFontScale: scale });
+                    setStatusMsg(`Escala global de frames configurada a ${label}.`);
+                  }}
+                  className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all ${
+                    (config.globalFontScale || 1.0) === scale
+                      ? 'bg-purple-600/20 border-purple-500 text-white ring-1 ring-purple-500/40 shadow-sm'
+                      : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                  }`}
+                >
+                  <span className="text-xs font-bold font-mono">{label}</span>
+                  <span className="text-[10px] text-zinc-500 mt-0.5">{desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* OBS Studio Integration Action Card */}
+          {onOpenObsModal && (
+            <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10 border border-purple-500/20 flex items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-bold text-white flex items-center gap-1.5 mb-0.5">
+                  <Tv2 className="w-4 h-4 text-purple-400" />
+                  Conexión OBS Studio (WebSocket v5)
+                </span>
+                <p className="text-[11px] text-zinc-400">
+                  Controla la emisión, graba y monitorea cuadros perdidos (dropped frames) directamente en tiempo real.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenObsModal}
+                className="shrink-0 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold shadow transition-colors"
+              >
+                Abrir Panel OBS
+              </button>
+            </div>
+          )}
 
           {/* Stream Health Diagnostic Action */}
           {onOpenHealthModal && (

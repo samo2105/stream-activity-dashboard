@@ -35,6 +35,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   const [url, setUrl] = useState<string>('');
   const [columnSpan, setColumnSpan] = useState<1 | 2>(1);
   const [themeMode, setThemeMode] = useState<ThemeMode>('normal');
+  const [fontScale, setFontScale] = useState<number>(1.0);
 
   // Quick helper inputs for specific platforms
   const [channelName, setChannelName] = useState<string>('');
@@ -131,9 +132,11 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
         }
       }
       setThemeMode(editingWidget.themeMode || (editingWidget.highContrast ? 'dark' : 'normal'));
+      setFontScale(editingWidget.fontScale || 1.0);
     } else if (isOpen) {
       setColumnSpan(1);
       setThemeMode('normal');
+      setFontScale(1.0);
       applyPrepopulation(platform);
     }
   }, [editingWidget, isOpen]);
@@ -224,6 +227,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
         url: cleanUrl,
         columnSpan,
         themeMode,
+        fontScale: fontScale !== 1.0 ? fontScale : undefined,
         highContrast: themeMode === 'dark',
       },
       editingWidget?.id
@@ -557,6 +561,42 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
               {themeMode === 'normal' && 'Modo estándar balanceado con fondo oscuro.'}
               {themeMode === 'dark' && 'Fondo negro puro (#000000) con alto contraste y brillo mejorado.'}
               {themeMode === 'light' && 'Fondo blanco (#ffffff) ideal para chats transparentes con texto oscuro.'}
+            </p>
+          </div>
+
+          {/* Font Scale / Zoom Selector */}
+          <div>
+            <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>Tamaño de Fuente / Escala del Frame</span>
+              <span className="text-purple-400 font-mono font-bold text-xs">{Math.round(fontScale * 100)}%</span>
+            </label>
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+              {[
+                { scale: 0.75, label: '75%' },
+                { scale: 0.85, label: '85%' },
+                { scale: 1.0, label: '100%' },
+                { scale: 1.15, label: '115%' },
+                { scale: 1.3, label: '130%' },
+                { scale: 1.5, label: '150%' },
+                { scale: 1.75, label: '175%' },
+                { scale: 2.0, label: '200%' },
+              ].map(({ scale, label }) => (
+                <button
+                  key={scale}
+                  type="button"
+                  onClick={() => setFontScale(scale)}
+                  className={`py-1.5 text-xs rounded-lg border font-mono transition-all ${
+                    fontScale === scale
+                      ? 'bg-purple-600 border-purple-400 text-white font-bold shadow-sm'
+                      : 'bg-zinc-950/40 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-zinc-500 mt-1.5">
+              Aumenta o reduce la fuente de este widget (útil para leer chats o listas de eventos a distancia).
             </p>
           </div>
         </form>

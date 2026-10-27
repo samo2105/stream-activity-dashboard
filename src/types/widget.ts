@@ -22,6 +22,7 @@ export interface WidgetItem {
   columnSpan?: 1 | 2; // 1 = normal, 2 = wide card
   height?: number;
   themeMode?: ThemeMode; // 'normal' (default), 'dark' (high contrast OLED), 'light' (clean white)
+  fontScale?: number; // scale factor for frame content: 0.75, 0.85, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0
   highContrast?: boolean; // legacy compatibility fallback
   createdAt: number;
 }
@@ -53,11 +54,15 @@ export interface ViewerStats {
   lastUpdated?: number;
 }
 
+import type { ObsConfig } from './obs';
+
 export interface DashboardConfig {
   columns: GridColumns;
   autoRefreshInterval: number; // in seconds (0 = off)
   themeMode?: ThemeMode; // 'normal' | 'dark' | 'light'
   counterSize?: CounterSize; // 'sm' | 'md' | 'lg' | 'xl'
+  globalFontScale?: number; // scale factor for all frames: 0.75, 0.85, 1.0, 1.15, 1.3, 1.5, etc.
+  obs?: ObsConfig;
   channels: ChannelsConfig;
   widgets: WidgetItem[];
 }

@@ -7,10 +7,12 @@ import {
   Flame,
   Radio,
   Activity,
-  AlertCircle
+  AlertCircle,
+  Tv2
 } from 'lucide-react';
 import { ChannelsConfig, ViewerStats, ThemeMode, CounterSize } from '../types/widget';
 import { StreamHealthSummary } from '../types/streamHealth';
+import type { ObsConnectionStatus, ObsStreamStats } from '../types/obs';
 import { fetchAllViewerStats } from '../utils/viewers';
 
 interface ViewerBarProps {
@@ -19,10 +21,13 @@ interface ViewerBarProps {
   counterSize?: CounterSize;
   healthSummary?: StreamHealthSummary | null;
   streamAlerts?: string[];
+  obsStatus?: ObsConnectionStatus;
+  obsStats?: ObsStreamStats;
   onUpdateChannels: (channels: ChannelsConfig) => void;
   onUpdateCounterSize?: (size: CounterSize) => void;
   onOpenProfileModal?: () => void;
   onOpenHealthModal?: () => void;
+  onOpenObsModal?: () => void;
 }
 
 const REFRESH_INTERVAL_SECONDS = 15;
@@ -107,10 +112,13 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
   counterSize = 'md',
   healthSummary,
   streamAlerts = [],
+  obsStatus,
+  obsStats,
   onUpdateChannels,
   onUpdateCounterSize,
   onOpenProfileModal,
   onOpenHealthModal,
+  onOpenObsModal,
 }) => {
   const [stats, setStats] = useState<ViewerStats>({
     twitch: { channel: channels.twitch, viewers: 0, isLive: false, loading: true },
@@ -303,6 +311,42 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
                 healthSummary?.overallRating === 'good' ? 'Buena' :
                 healthSummary?.overallRating === 'fair' ? 'Fluctuante' : 'Deficiente'})
             </span>
+          </button>
+
+          {/* OBS Studio Live Status Chip */}
+          <button
+            type="button"
+            onClick={onOpenObsModal}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs transition-all hover:scale-[1.02] cursor-pointer ${
+              obsStatus === 'connected'
+                ? obsStats?.outputActive
+                  ? isLight ? 'bg-purple-100 border-purple-300 text-purple-900' : 'bg-purple-600/20 border-purple-500/50 text-purple-300'
+                  : isLight ? 'bg-indigo-50 border-indigo-200 text-indigo-800' : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300'
+                : obsStatus === 'connecting'
+                ? isLight ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                : isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-zinc-900' : 'bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+            }`}
+            title="Estado del endpoint OBS Studio WebSocket (haz clic para conectar y ver métricas)"
+          >
+            <Tv2 className="w-3.5 h-3.5 shrink-0 text-purple-400" />
+            <span className="font-bold text-[11px]">OBS:</span>
+            {obsStatus === 'connected' ? (
+              obsStats?.outputActive ? (
+                <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  EN VIVO
+                  <span className="text-[10px] font-mono text-zinc-400 font-normal hidden md:inline">
+                    ({obsStats.outputTimecode || '00:00:00'})
+                  </span>
+                </span>
+              ) : (
+                <span className="text-[11px] text-zinc-400 font-medium">Listo</span>
+              )
+            ) : obsStatus === 'connecting' ? (
+              <span className="text-[11px] text-amber-400 font-medium">Conectando...</span>
+            ) : (
+              <span className="text-[10px] text-zinc-500">Desconectado</span>
+            )}
           </button>
 
           {/* Stream Drop Warning Indicator (if any alerts) */}

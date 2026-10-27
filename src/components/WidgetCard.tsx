@@ -21,19 +21,25 @@ import { sanitizeStreamUrl } from '../utils/urlHelper';
 interface WidgetCardProps {
   widget: WidgetItem;
   dashboardTheme?: ThemeMode;
+  dashboardFontScale?: number;
   onDelete: (id: string) => void;
   onEdit: (widget: WidgetItem) => void;
   onToggleSpan: (id: string) => void;
   onCycleTheme: (id: string) => void;
+  onUpdateFontScale?: (id: string, scale: number) => void;
 }
+
+const FONT_SCALES = [0.75, 0.85, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0];
 
 export const WidgetCard: React.FC<WidgetCardProps> = ({
   widget,
   dashboardTheme,
+  dashboardFontScale,
   onDelete,
   onEdit,
   onToggleSpan,
   onCycleTheme,
+  onUpdateFontScale,
 }) => {
   const [reloadKey, setReloadKey] = useState<number>(0);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -87,6 +93,31 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
     onCycleTheme(widget.id);
   };
 
+  // Font scale calculation and handlers
+  const currentFontScale = widget.fontScale ?? dashboardFontScale ?? 1.0;
+
+  const handleDecreaseFont = () => {
+    if (!onUpdateFontScale) return;
+    const currentIdx = FONT_SCALES.findIndex(s => Math.abs(s - currentFontScale) < 0.05);
+    const validIdx = currentIdx !== -1 ? currentIdx : 2;
+    const newIdx = validIdx > 0 ? validIdx - 1 : 0;
+    onUpdateFontScale(widget.id, FONT_SCALES[newIdx]);
+  };
+
+  const handleIncreaseFont = () => {
+    if (!onUpdateFontScale) return;
+    const currentIdx = FONT_SCALES.findIndex(s => Math.abs(s - currentFontScale) < 0.05);
+    const validIdx = currentIdx !== -1 ? currentIdx : 2;
+    const newIdx = validIdx < FONT_SCALES.length - 1 ? validIdx + 1 : FONT_SCALES.length - 1;
+    onUpdateFontScale(widget.id, FONT_SCALES[newIdx]);
+  };
+
+  const handleResetFont = () => {
+    if (onUpdateFontScale) {
+      onUpdateFontScale(widget.id, 1.0);
+    }
+  };
+
   return (
     <div
       className={`group flex flex-col rounded-xl border shadow-md transition-all duration-200 overflow-hidden ${
@@ -133,6 +164,44 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-1 shrink-0">
+          {/* Font Scaling Controls (A- / 100% / A+) */}
+          <div className={`flex items-center rounded border px-1 py-0.5 text-xs select-none ${
+            isLight ? 'bg-zinc-200/80 border-zinc-300' : 'bg-zinc-900 border-zinc-800'
+          }`}>
+            <button
+              type="button"
+              onClick={handleDecreaseFont}
+              className={`px-1 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                isLight ? 'text-zinc-600 hover:text-black hover:bg-zinc-300' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              }`}
+              title="Disminuir tamaño de fuente/zoom del frame (A-)"
+            >
+              A-
+            </button>
+            <button
+              type="button"
+              onClick={handleResetFont}
+              className={`px-1 text-[10px] font-mono font-medium transition-colors ${
+                currentFontScale !== 1.0 
+                  ? 'text-purple-400 font-bold' 
+                  : isLight ? 'text-zinc-600' : 'text-zinc-400'
+              }`}
+              title={`Tamaño de fuente: ${Math.round(currentFontScale * 100)}% (clic para restablecer)`}
+            >
+              {Math.round(currentFontScale * 100)}%
+            </button>
+            <button
+              type="button"
+              onClick={handleIncreaseFont}
+              className={`px-1 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                isLight ? 'text-zinc-600 hover:text-black hover:bg-zinc-300' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              }`}
+              title="Aumentar tamaño de fuente/zoom del frame (A+)"
+            >
+              A+
+            </button>
+          </div>
+
           {/* 3-Mode Theme Cycle Toggle (Normal -> Oscuro -> Claro -> Normal) */}
           <button
             type="button"
@@ -341,13 +410,20 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
               </div>
             )}
             <iframe
-              key={`${widget.id}-${effectiveUrl}-${widget.platform}-${currentTheme}-${reloadKey}`}
+              key={`${widget.id}-${effectiveUrl}-${widget.platform}-${currentTheme}-${currentFontScale}-${reloadKey}`}
               src={effectiveUrl}
               title={widget.title}
               onLoad={() => setIsLoading(false)}
-              className="w-full h-full border-0"
+              className="border-0"
               referrerPolicy="no-referrer"
               style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: `${(100 / currentFontScale).toFixed(3)}%`,
+                height: `${(100 / currentFontScale).toFixed(3)}%`,
+                transform: `scale(${currentFontScale})`,
+                transformOrigin: '0 0',
                 backgroundColor: isDark ? '#000000' : isLight ? '#ffffff' : '#09090b',
               }}
               allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen"

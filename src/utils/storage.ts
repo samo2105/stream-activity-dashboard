@@ -1,5 +1,6 @@
 import { DashboardConfig, WidgetItem } from '../types/widget';
 import { INITIAL_DEFAULT_WIDGETS, DEFAULT_STREAMLABS_TOKEN } from './presets';
+import { DEFAULT_OBS_CONFIG } from './obsWebSocket';
 
 const STORAGE_KEY = 'streampulse_dashboard_config_v4';
 
@@ -8,6 +9,8 @@ export const DEFAULT_CONFIG: DashboardConfig = {
   autoRefreshInterval: 0,
   themeMode: 'normal',
   counterSize: 'md',
+  globalFontScale: 1.0,
+  obs: DEFAULT_OBS_CONFIG,
   channels: {
     twitch: 'samo2105',
     kick: '',
@@ -53,6 +56,8 @@ export function loadDashboardConfig(): DashboardConfig {
       autoRefreshInterval: parsed.autoRefreshInterval || 0,
       themeMode: parsed.themeMode || 'normal',
       counterSize: parsed.counterSize || 'md',
+      globalFontScale: typeof parsed.globalFontScale === 'number' ? parsed.globalFontScale : 1.0,
+      obs: parsed.obs || DEFAULT_OBS_CONFIG,
       channels: {
         twitch: parsed.channels?.twitch ?? DEFAULT_CONFIG.channels.twitch,
         kick: parsed.channels?.kick ?? DEFAULT_CONFIG.channels.kick,
@@ -99,6 +104,7 @@ export function loadDashboardConfig(): DashboardConfig {
             }
             return {
               ...w,
+              fontScale: typeof w.fontScale === 'number' ? w.fontScale : undefined,
               themeMode: w.themeMode || (w.highContrast ? 'dark' : 'normal'),
             };
           })
