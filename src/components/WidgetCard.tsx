@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   RotateCw, 
   Maximize2, 
@@ -42,6 +42,11 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
 
   // Automatically sanitize and adapt URLs for iframes
   const effectiveUrl = sanitizeStreamUrl(widget.url, widget.platform);
+
+  // Trigger loading spinner whenever the widget URL or platform is edited
+  useEffect(() => {
+    setIsLoading(true);
+  }, [widget.url, widget.platform]);
 
   const handleReload = () => {
     setIsLoading(true);
@@ -275,7 +280,7 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
               </div>
             )}
             <iframe
-              key={reloadKey}
+              key={`${widget.id}-${widget.url}-${widget.platform}-${reloadKey}`}
               src={effectiveUrl}
               title={widget.title}
               onLoad={() => setIsLoading(false)}

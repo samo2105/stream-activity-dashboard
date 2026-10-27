@@ -43,42 +43,46 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
     : 'localhost';
 
   const applyPrepopulation = (targetPlatform: WidgetPlatform, typeOverride?: 'eventlist' | 'chatbox' | 'alertbox') => {
-    const p = PLATFORM_PRESETS[targetPlatform];
-    const effectiveToken = channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN;
+    const effectiveToken = streamlabsToken || channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN;
     const effectiveType = typeOverride || streamlabsWidgetType;
 
     if (targetPlatform === 'twitch') {
-      const user = (channels.twitch || 'samo2105').replace(/^@/, '');
+      const user = (channelName || channels.twitch || 'samo2105').replace(/^@/, '');
       setChannelName(user);
       setTitle(`Twitch Chat (${user})`);
       setUrl(`https://www.twitch.tv/embed/${user}/chat?parent=${currentHost}&parent=samo2105.github.io&darkpopout`);
     } else if (targetPlatform === 'kick') {
-      const user = (channels.kick || '').replace(/^@/, '');
+      const user = (channelName || channels.kick || '').replace(/^@/, '');
       setChannelName(user);
-      setTitle(user ? `Kick Chat (${user})` : p.defaultTitle);
+      setTitle(user ? `Kick Chat (${user})` : 'Kick Chat');
       setUrl(user ? `https://kick.com/popout/${user}/chat` : '');
     } else if (targetPlatform === 'youtube') {
-      const ytStreamId = channels.youtube || 'SwjSwFWmxl0';
+      const ytStreamId = youtubeVideoId || channels.youtube || 'SwjSwFWmxl0';
       const handle = channels.youtubeHandle ? `@${channels.youtubeHandle.replace(/^@/, '')}` : (channels.youtube === 'SwjSwFWmxl0' ? '@zannito' : ytStreamId);
       setYoutubeVideoId(ytStreamId);
       setTitle(`YouTube Live Chat (${handle})`);
       setUrl(`https://www.youtube.com/live_chat?v=${ytStreamId}&embed_domain=${currentHost}&dark_theme=1`);
     } else if (targetPlatform === 'streamlabs' || targetPlatform === 'eventlist' || targetPlatform === 'chatbox') {
       setStreamlabsToken(effectiveToken);
-      const isChat = targetPlatform === 'chatbox' || (targetPlatform === 'streamlabs' && effectiveType === 'chatbox');
-      const isAlert = targetPlatform === 'streamlabs' && effectiveType === 'alertbox';
 
-      if (isChat) {
+      if (effectiveType === 'chatbox') {
+        setPlatform('chatbox');
+        setStreamlabsWidgetType('chatbox');
         setTitle('Streamlabs Chat Box');
         setUrl(`https://streamlabs.com/widgets/chat-box/v1/${effectiveToken}`);
-      } else if (isAlert) {
+      } else if (effectiveType === 'alertbox') {
+        setPlatform('streamlabs');
+        setStreamlabsWidgetType('alertbox');
         setTitle('Streamlabs Alert Box');
         setUrl(`https://streamlabs.com/alert-box/v3/${effectiveToken}`);
       } else {
+        setPlatform('eventlist');
+        setStreamlabsWidgetType('eventlist');
         setTitle('Streamlabs Event List');
         setUrl(`https://streamlabs.com/widgets/event-list/v1/${effectiveToken}`);
       }
     } else {
+      const p = PLATFORM_PRESETS[targetPlatform] || PLATFORM_PRESETS.custom;
       setTitle(p.defaultTitle);
       setUrl('');
     }
@@ -90,25 +94,55 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
       setTitle(editingWidget.title);
       setUrl(editingWidget.url);
       setColumnSpan(editingWidget.columnSpan || 1);
+
+      // Extract and pre-fill quick generator fields
+      if (editingWidget.platform === 'twitch' || editingWidget.url.includes('twitch.tv')) {
+        const twitchMatch = editingWidget.url.match(/twitch\.tv\/(?:embed|popout)\/([a-zA-Z0-9_]+)/i);
+        setChannelName((twitchMatch && twitchMatch[1]) || channels.twitch || '');
+      } else if (editingWidget.platform === 'kick' || editingWidget.url.includes('kick.com')) {
+        const kickMatch = editingWidget.url.match(/kick\.com\/popout\/([a-zA-Z0-9_]+)/i);
+        setChannelName((kickMatch && kickMatch[1]) || channels.kick || '');
+      } else if (editingWidget.platform === 'youtube' || editingWidget.url.includes('youtube.com')) {
+        let ytId = '';
+        if (editingWidget.url.includes('v=')) {
+          ytId = editingWidget.url.split('v=')[1]?.split('&')[0] || '';
+        }
+        setYoutubeVideoId(ytId || channels.youtube || '');
+      } else if (
+        editingWidget.platform === 'streamlabs' || 
+        editingWidget.platform === 'eventlist' || 
+        editingWidget.platform === 'chatbox' || 
+        editingWidget.url.includes('streamlabs.com')
+      ) {
+        const tokenMatch = editingWidget.url.match(/\/v[1-3]\/([a-zA-Z0-9]{60,})/);
+        const token = (tokenMatch && tokenMatch[1]) || channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN;
+        setStreamlabsToken(token);
+
+        if (editingWidget.url.includes('chat-box') || editingWidget.platform === 'chatbox') {
+          setStreamlabsWidgetType('chatbox');
+        } else if (editingWidget.url.includes('alert-box')) {
+          setStreamlabsWidgetType('alertbox');
+        } else {
+          setStreamlabsWidgetType('eventlist');
+        }
+      }
     } else if (isOpen) {
+      setColumnSpan(1);
       applyPrepopulation(platform);
     }
   }, [editingWidget, isOpen]);
 
   if (!isOpen) return null;
 
-  const currentPreset = PLATFORM_PRESETS[platform];
+  const currentPreset = PLATFORM_PRESETS[platform] || PLATFORM_PRESETS.custom;
 
   const handlePlatformChange = (newPlatform: WidgetPlatform) => {
     setPlatform(newPlatform);
-    if (!editingWidget) {
-      applyPrepopulation(newPlatform);
-    }
+    applyPrepopulation(newPlatform);
   };
 
   const handleSelectStreamlabsType = (type: 'eventlist' | 'chatbox' | 'alertbox') => {
-    setStreamlabsWidgetType(type);
-    applyPrepopulation(platform, type);
+    applyPrepopulation('streamlabs', type);
   };
 
   const handleStreamlabsTokenChange = (raw: string) => {
@@ -119,7 +153,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
     }
     setStreamlabsToken(token);
 
-    if (platform === 'chatbox' || streamlabsWidgetType === 'chatbox') {
+    if (streamlabsWidgetType === 'chatbox' || platform === 'chatbox') {
       setUrl(`https://streamlabs.com/widgets/chat-box/v1/${token}`);
     } else if (streamlabsWidgetType === 'alertbox') {
       setUrl(`https://streamlabs.com/alert-box/v3/${token}`);
@@ -172,7 +206,10 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUrl = extractCleanUrl(url);
-    if (!title.trim() || !cleanUrl) return;
+    if (!title.trim() || !cleanUrl) {
+      alert('Por favor ingresa un título y una URL válida para el widget.');
+      return;
+    }
 
     onSave(
       {
@@ -261,7 +298,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
                   type="button"
                   onClick={() => handleSelectStreamlabsType('eventlist')}
                   className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
-                    streamlabsWidgetType === 'eventlist' || platform === 'eventlist'
+                    streamlabsWidgetType === 'eventlist'
                       ? 'bg-teal-600 text-white border-teal-500 shadow-sm'
                       : 'bg-zinc-950/70 text-zinc-400 border-zinc-800 hover:text-white'
                   }`}
@@ -272,7 +309,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
                   type="button"
                   onClick={() => handleSelectStreamlabsType('chatbox')}
                   className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
-                    streamlabsWidgetType === 'chatbox' || platform === 'chatbox'
+                    streamlabsWidgetType === 'chatbox'
                       ? 'bg-teal-600 text-white border-teal-500 shadow-sm'
                       : 'bg-zinc-950/70 text-zinc-400 border-zinc-800 hover:text-white'
                   }`}
