@@ -9,6 +9,7 @@ interface WidgetGridProps {
   onDeleteWidget: (id: string) => void;
   onEditWidget: (widget: WidgetItem) => void;
   onToggleSpan: (id: string) => void;
+  onToggleContrast: (id: string) => void;
   onOpenAddModal: () => void;
   onOpenPresetsModal: () => void;
 }
@@ -19,6 +20,7 @@ export const WidgetGrid: React.FC<WidgetGridProps> = ({
   onDeleteWidget,
   onEditWidget,
   onToggleSpan,
+  onToggleContrast,
   onOpenAddModal,
   onOpenPresetsModal,
 }) => {
@@ -80,6 +82,7 @@ export const WidgetGrid: React.FC<WidgetGridProps> = ({
           onDelete={onDeleteWidget}
           onEdit={onEditWidget}
           onToggleSpan={onToggleSpan}
+          onToggleContrast={onToggleContrast}
         />
       ))}
     </div>

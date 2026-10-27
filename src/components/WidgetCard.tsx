@@ -21,6 +21,7 @@ interface WidgetCardProps {
   onDelete: (id: string) => void;
   onEdit: (widget: WidgetItem) => void;
   onToggleSpan: (id: string) => void;
+  onToggleContrast: (id: string) => void;
 }
 
 export const WidgetCard: React.FC<WidgetCardProps> = ({
@@ -28,12 +29,13 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
   onDelete,
   onEdit,
   onToggleSpan,
+  onToggleContrast,
 }) => {
   const [reloadKey, setReloadKey] = useState<number>(0);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [contrastMode, setContrastMode] = useState<'dark' | 'contrast' | 'light' | 'invert'>('dark');
 
+  const isHighContrast = Boolean(widget.highContrast);
   const preset = PLATFORM_PRESETS[widget.platform] || PLATFORM_PRESETS.custom;
   const isPlaceholder = widget.url === 'about:blank' || widget.url.includes('TU_TOKEN') || widget.url.includes('TU_CANAL');
   const isTwitch = widget.platform === 'twitch' || widget.url.includes('twitch.tv');
@@ -58,18 +60,15 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
   };
 
   const handleToggleContrast = () => {
-    setContrastMode((prev) => {
-      if (prev === 'dark') return 'contrast';
-      if (prev === 'contrast') return 'light';
-      if (prev === 'light') return 'invert';
-      return 'dark';
-    });
+    onToggleContrast(widget.id);
   };
 
   return (
     <div
       className={`group flex flex-col rounded-xl border bg-zinc-900/90 shadow-md transition-all duration-200 overflow-hidden ${
-        preset.borderColor
+        isHighContrast 
+          ? 'border-amber-500/60 shadow-xl shadow-black/80 ring-1 ring-amber-500/20' 
+          : preset.borderColor
       } ${
         widget.columnSpan === 2 ? 'md:col-span-2' : 'col-span-1'
       } ${
@@ -100,26 +99,22 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-1 shrink-0">
-          {/* Contrast Mode Toggle */}
+          {/* High Contrast Mode Toggle */}
           <button
             type="button"
             onClick={handleToggleContrast}
-            className={`p-1.5 rounded text-xs transition-colors ${
-              contrastMode !== 'dark'
-                ? 'text-amber-400 bg-amber-400/15 border border-amber-400/30'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+            className={`p-1.5 rounded text-xs transition-all ${
+              isHighContrast
+                ? 'text-amber-400 bg-amber-400/20 border border-amber-400/50 shadow-sm shadow-amber-400/20'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent'
             }`}
-            title={`Fondo/Contraste actual: ${
-              contrastMode === 'dark'
-                ? 'Oscuro (#09090b)'
-                : contrastMode === 'contrast'
-                ? 'Gris Pizarra (#18181b)'
-                : contrastMode === 'light'
-                ? 'Fondo Blanco (#ffffff)'
-                : 'Colores Invertidos'
-            }. Clic para alternar si no se leen los mensajes.`}
+            title={
+              isHighContrast
+                ? 'Modo Alto Contraste: ACTIVADO (Fondo negro puro y máxima nitidez). Clic para desactivar.'
+                : 'Modo Alto Contraste: DESACTIVADO. Clic para activar.'
+            }
           >
-            <SunMoon className="w-3.5 h-3.5" />
+            <SunMoon className={`w-3.5 h-3.5 ${isHighContrast ? 'text-amber-400' : ''}`} />
           </button>
 
           {/* Span toggle (1 col vs 2 col) */}
@@ -239,9 +234,9 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
       {/* Card Body / Iframe Area */}
       <div 
         className={`relative flex-1 overflow-hidden flex flex-col items-center justify-center transition-colors duration-200 ${
-          contrastMode === 'light' ? 'bg-white' : contrastMode === 'contrast' ? 'bg-zinc-900' : 'bg-zinc-950'
+          isHighContrast ? 'bg-black' : 'bg-zinc-950'
         }`} 
-        style={{ backgroundColor: contrastMode === 'light' ? '#ffffff' : contrastMode === 'contrast' ? '#18181b' : '#09090b' }}
+        style={{ backgroundColor: isHighContrast ? '#000000' : '#09090b' }}
       >
         {isPlaceholder ? (
           /* Placeholder Guide Card */
@@ -287,9 +282,9 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
               className="w-full h-full border-0"
               referrerPolicy="no-referrer"
               style={{
-                backgroundColor: contrastMode === 'light' ? '#ffffff' : contrastMode === 'contrast' ? '#18181b' : '#09090b',
-                colorScheme: contrastMode === 'light' ? 'light' : 'dark',
-                filter: contrastMode === 'invert' ? 'invert(1) hue-rotate(180deg)' : undefined,
+                backgroundColor: isHighContrast ? '#000000' : '#09090b',
+                colorScheme: 'dark',
+                filter: isHighContrast ? 'contrast(140%) brightness(115%)' : undefined,
               }}
               allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen"
               allowTransparency={true}

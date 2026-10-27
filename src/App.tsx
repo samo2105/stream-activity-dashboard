@@ -154,6 +154,33 @@ export function App() {
     }));
   };
 
+  // Handle Toggle High Contrast per widget
+  const handleToggleContrast = (id: string) => {
+    setConfig((prev) => ({
+      ...prev,
+      widgets: prev.widgets.map((w) =>
+        w.id === id ? { ...w, highContrast: !w.highContrast } : w
+      ),
+    }));
+  };
+
+  // Handle Toggle High Contrast globally across all widgets
+  const handleToggleAllContrast = () => {
+    setConfig((prev) => {
+      const anyDisabled = prev.widgets.some((w) => !w.highContrast);
+      return {
+        ...prev,
+        widgets: prev.widgets.map((w) => ({
+          ...w,
+          highContrast: anyDisabled,
+        })),
+      };
+    });
+  };
+
+  const allHighContrast =
+    config.widgets.length > 0 && config.widgets.every((w) => w.highContrast);
+
   // Handle Preset Apply
   const handleApplyPreset = (widgets: WidgetItem[], columns: GridColumns) => {
     setConfig((prev) => ({
@@ -185,6 +212,8 @@ export function App() {
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
         channels={config.channels}
         totalWidgets={config.widgets.length}
+        allHighContrast={allHighContrast}
+        onToggleAllContrast={handleToggleAllContrast}
       />
 
       {/* Live Viewers Bar */}
@@ -202,6 +231,7 @@ export function App() {
           onDeleteWidget={handleDeleteWidget}
           onEditWidget={handleEditWidget}
           onToggleSpan={handleToggleSpan}
+          onToggleContrast={handleToggleContrast}
           onOpenAddModal={handleOpenAdd}
           onOpenPresetsModal={() => setIsPresetsModalOpen(true)}
         />

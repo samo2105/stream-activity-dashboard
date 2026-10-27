@@ -17,6 +17,7 @@ export interface WidgetItem {
   url: string;
   columnSpan?: 1 | 2; // 1 = normal, 2 = wide card
   height?: number;
+  highContrast?: boolean;
   createdAt: number;
 }
 

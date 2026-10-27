@@ -6,7 +6,8 @@ import {
   Sparkles, 
   Github, 
   Tv2,
-  Radio
+  Radio,
+  SunMoon
 } from 'lucide-react';
 import { GridColumns, ChannelsConfig } from '../types/widget';
 
@@ -19,6 +20,8 @@ interface NavbarProps {
   onOpenProfileModal: () => void;
   channels: ChannelsConfig;
   totalWidgets: number;
+  allHighContrast?: boolean;
+  onToggleAllContrast?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -30,6 +33,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenProfileModal,
   channels,
   totalWidgets,
+  allHighContrast,
+  onToggleAllContrast,
 }) => {
   return (
     <header className="sticky top-0 z-30 border-b border-zinc-800 bg-zinc-950/85 backdrop-blur-md px-4 py-3">
@@ -89,6 +94,27 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             Plantillas
           </button>
+
+          {/* Global High Contrast button */}
+          {onToggleAllContrast && (
+            <button
+              type="button"
+              onClick={onToggleAllContrast}
+              className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                allHighContrast
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm shadow-amber-500/10'
+                  : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border-zinc-800'
+              }`}
+              title={
+                allHighContrast
+                  ? 'Alto Contraste Global: ACTIVADO en todos los widgets. Haz clic para desactivar.'
+                  : 'Alto Contraste Global: Haz clic para activar en todos los widgets.'
+              }
+            >
+              <SunMoon className={`w-3.5 h-3.5 ${allHighContrast ? 'text-amber-400' : 'text-zinc-400'}`} />
+              <span className="hidden md:inline">Alto Contraste</span>
+            </button>
+          )}
         </div>
 
         {/* Action Buttons */}
