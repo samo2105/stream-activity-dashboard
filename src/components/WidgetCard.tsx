@@ -349,8 +349,6 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
               referrerPolicy="no-referrer"
               style={{
                 backgroundColor: isDark ? '#000000' : isLight ? '#ffffff' : '#09090b',
-                colorScheme: isLight ? 'light' : 'dark',
-                filter: isDark ? 'contrast(140%) brightness(115%)' : undefined,
               }}
               allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen"
               allowTransparency={true}
