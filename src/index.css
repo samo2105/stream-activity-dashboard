@@ -16,8 +16,7 @@
   }
 
   iframe {
-    color-scheme: dark !important;
-    background-color: #09090b !important;
+    color-scheme: dark;
   }
 
   /* Custom dark scrollbar */

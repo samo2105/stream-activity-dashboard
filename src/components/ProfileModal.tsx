@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Radio, Youtube, Twitch, HelpCircle, Check, Loader2 } from 'lucide-react';
 import { ChannelsConfig, WidgetItem } from '../types/widget';
+import { DEFAULT_STREAMLABS_TOKEN } from '../utils/presets';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [youtubeStreamId, setYoutubeStreamId] = useState<string>(channels.youtube || '');
   const [twitchChannel, setTwitchChannel] = useState<string>(channels.twitch || '');
   const [kickChannel, setKickChannel] = useState<string>(channels.kick || '');
+  const [streamlabsToken, setStreamlabsToken] = useState<string>(channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN);
   const [updateExistingWidgets, setUpdateExistingWidgets] = useState<boolean>(true);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanMessage, setScanMessage] = useState<string | null>(null);
@@ -29,6 +31,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     setYoutubeStreamId(channels.youtube || '');
     setTwitchChannel(channels.twitch || '');
     setKickChannel(channels.kick || '');
+    setStreamlabsToken(channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN);
     setScanMessage(null);
   }, [channels, isOpen]);
 
@@ -108,6 +111,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     const cleanTwitch = twitchChannel.trim().replace(/^@/, '');
     const cleanKick = kickChannel.trim().replace(/^@/, '');
     const cleanYtHandle = youtubeChannel.trim().replace(/^@/, '');
+    const cleanStreamlabs = streamlabsToken.trim();
 
     onSaveChannels(
       {
@@ -115,6 +119,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         youtubeHandle: cleanYtHandle,
         twitch: cleanTwitch,
         kick: cleanKick,
+        streamlabsToken: cleanStreamlabs || DEFAULT_STREAMLABS_TOKEN,
       },
       updateExistingWidgets
     );
@@ -235,6 +240,36 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             />
           </div>
 
+          {/* Streamlabs Section */}
+          <div className="p-4 rounded-xl bg-teal-500/10 border border-teal-500/20 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-teal-300 flex items-center gap-1.5 uppercase tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-teal-400 inline-block" />
+                Token de Streamlabs (Event List / Chat Box)
+              </label>
+              <span className="text-[10px] text-teal-400/80 bg-teal-500/10 px-2 py-0.5 rounded-full border border-teal-500/20 font-medium">
+                OBS / Widgets
+              </span>
+            </div>
+            <input
+              type="text"
+              placeholder="Pega tu token de Streamlabs o URL de widget..."
+              value={streamlabsToken}
+              onChange={(e) => {
+                let val = e.target.value.trim();
+                const tokenMatch = val.match(/\/v[1-3]\/([a-zA-Z0-9]{60,})/);
+                if (tokenMatch && tokenMatch[1]) {
+                  val = tokenMatch[1];
+                }
+                setStreamlabsToken(val);
+              }}
+              className="w-full px-3 py-1.5 bg-zinc-950 border border-teal-500/30 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-teal-400 font-mono"
+            />
+            <p className="text-[11px] text-zinc-400">
+              Se usa para generar automáticamente tus widgets de Lista de Eventos y Caja de Chat sin errores.
+            </p>
+          </div>
+
           {/* Option: Update open widgets automatically */}
           <div className="p-3 rounded-xl bg-zinc-950/70 border border-zinc-800 flex items-center gap-3 cursor-pointer select-none" onClick={() => setUpdateExistingWidgets(!updateExistingWidgets)}>
             <input
@@ -245,7 +280,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-zinc-700 bg-zinc-900"
             />
             <label htmlFor="updateWidgetsCheck" className="text-xs text-zinc-300 cursor-pointer">
-              Actualizar automáticamente los chats de YouTube, Twitch y Kick en el panel con estos canales
+              Actualizar automáticamente los widgets del panel (YouTube, Twitch, Kick y Streamlabs) con estos canales
             </label>
           </div>
 

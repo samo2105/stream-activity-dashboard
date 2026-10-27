@@ -8,8 +8,8 @@ import {
   Info,
   AlertTriangle
 } from 'lucide-react';
-import { WidgetItem, WidgetPlatform } from '../types/widget';
-import { PLATFORM_PRESETS } from '../utils/presets';
+import { WidgetItem, WidgetPlatform, ChannelsConfig } from '../types/widget';
+import { PLATFORM_PRESETS, DEFAULT_STREAMLABS_TOKEN } from '../utils/presets';
 import { extractCleanUrl, validateWidgetUrl } from '../utils/urlHelper';
 
 interface AddWidgetModalProps {
@@ -17,6 +17,7 @@ interface AddWidgetModalProps {
   onClose: () => void;
   onSave: (widgetData: Omit<WidgetItem, 'id' | 'createdAt'>, existingId?: string) => void;
   editingWidget?: WidgetItem | null;
+  channels: ChannelsConfig;
 }
 
 export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
@@ -24,6 +25,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   onClose,
   onSave,
   editingWidget,
+  channels,
 }) => {
   const [platform, setPlatform] = useState<WidgetPlatform>('eventlist');
   const [title, setTitle] = useState<string>('');
@@ -33,6 +35,54 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   // Quick helper inputs for specific platforms
   const [channelName, setChannelName] = useState<string>('');
   const [youtubeVideoId, setYoutubeVideoId] = useState<string>('');
+  const [streamlabsWidgetType, setStreamlabsWidgetType] = useState<'eventlist' | 'chatbox' | 'alertbox'>('eventlist');
+  const [streamlabsToken, setStreamlabsToken] = useState<string>('');
+
+  const currentHost = typeof window !== 'undefined' && window.location.hostname 
+    ? window.location.hostname 
+    : 'localhost';
+
+  const applyPrepopulation = (targetPlatform: WidgetPlatform, typeOverride?: 'eventlist' | 'chatbox' | 'alertbox') => {
+    const p = PLATFORM_PRESETS[targetPlatform];
+    const effectiveToken = channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN;
+    const effectiveType = typeOverride || streamlabsWidgetType;
+
+    if (targetPlatform === 'twitch') {
+      const user = (channels.twitch || 'samo2105').replace(/^@/, '');
+      setChannelName(user);
+      setTitle(`Twitch Chat (${user})`);
+      setUrl(`https://www.twitch.tv/embed/${user}/chat?parent=${currentHost}&parent=samo2105.github.io&darkpopout`);
+    } else if (targetPlatform === 'kick') {
+      const user = (channels.kick || '').replace(/^@/, '');
+      setChannelName(user);
+      setTitle(user ? `Kick Chat (${user})` : p.defaultTitle);
+      setUrl(user ? `https://kick.com/popout/${user}/chat` : '');
+    } else if (targetPlatform === 'youtube') {
+      const ytStreamId = channels.youtube || 'SwjSwFWmxl0';
+      const handle = channels.youtubeHandle ? `@${channels.youtubeHandle.replace(/^@/, '')}` : (channels.youtube === 'SwjSwFWmxl0' ? '@zannito' : ytStreamId);
+      setYoutubeVideoId(ytStreamId);
+      setTitle(`YouTube Live Chat (${handle})`);
+      setUrl(`https://www.youtube.com/live_chat?v=${ytStreamId}&embed_domain=${currentHost}&dark_theme=1`);
+    } else if (targetPlatform === 'streamlabs' || targetPlatform === 'eventlist' || targetPlatform === 'chatbox') {
+      setStreamlabsToken(effectiveToken);
+      const isChat = targetPlatform === 'chatbox' || (targetPlatform === 'streamlabs' && effectiveType === 'chatbox');
+      const isAlert = targetPlatform === 'streamlabs' && effectiveType === 'alertbox';
+
+      if (isChat) {
+        setTitle('Streamlabs Chat Box');
+        setUrl(`https://streamlabs.com/widgets/chat-box/v1/${effectiveToken}`);
+      } else if (isAlert) {
+        setTitle('Streamlabs Alert Box');
+        setUrl(`https://streamlabs.com/alert-box/v3/${effectiveToken}`);
+      } else {
+        setTitle('Streamlabs Event List');
+        setUrl(`https://streamlabs.com/widgets/event-list/v1/${effectiveToken}`);
+      }
+    } else {
+      setTitle(p.defaultTitle);
+      setUrl('');
+    }
+  };
 
   useEffect(() => {
     if (editingWidget) {
@@ -40,27 +90,41 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
       setTitle(editingWidget.title);
       setUrl(editingWidget.url);
       setColumnSpan(editingWidget.columnSpan || 1);
-    } else {
-      const preset = PLATFORM_PRESETS[platform];
-      setTitle(preset.defaultTitle);
-      setUrl('');
-      setColumnSpan(1);
-      setChannelName('');
-      setYoutubeVideoId('');
+    } else if (isOpen) {
+      applyPrepopulation(platform);
     }
-  }, [editingWidget, isOpen, platform]);
+  }, [editingWidget, isOpen]);
 
   if (!isOpen) return null;
 
   const currentPreset = PLATFORM_PRESETS[platform];
-  const currentHost = window.location.hostname || 'localhost';
 
   const handlePlatformChange = (newPlatform: WidgetPlatform) => {
     setPlatform(newPlatform);
-    const p = PLATFORM_PRESETS[newPlatform];
     if (!editingWidget) {
-      setTitle(p.defaultTitle);
-      setUrl('');
+      applyPrepopulation(newPlatform);
+    }
+  };
+
+  const handleSelectStreamlabsType = (type: 'eventlist' | 'chatbox' | 'alertbox') => {
+    setStreamlabsWidgetType(type);
+    applyPrepopulation(platform, type);
+  };
+
+  const handleStreamlabsTokenChange = (raw: string) => {
+    let token = raw.trim();
+    const tokenMatch = token.match(/\/v[1-3]\/([a-zA-Z0-9]{60,})/);
+    if (tokenMatch && tokenMatch[1]) {
+      token = tokenMatch[1];
+    }
+    setStreamlabsToken(token);
+
+    if (platform === 'chatbox' || streamlabsWidgetType === 'chatbox') {
+      setUrl(`https://streamlabs.com/widgets/chat-box/v1/${token}`);
+    } else if (streamlabsWidgetType === 'alertbox') {
+      setUrl(`https://streamlabs.com/alert-box/v3/${token}`);
+    } else {
+      setUrl(`https://streamlabs.com/widgets/event-list/v1/${token}`);
     }
   };
 
@@ -68,7 +132,6 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
     setChannelName(user);
     if (!user.trim()) return;
     const cleanUser = user.trim().replace(/^@/, '').toLowerCase();
-    // Twitch embed format requires parent parameter to allow iframe rendering
     const twitchEmbedUrl = `https://www.twitch.tv/embed/${cleanUser}/chat?parent=${currentHost}&parent=samo2105.github.io&darkpopout`;
     setUrl(twitchEmbedUrl);
     if (!editingWidget || title.startsWith('Twitch')) {
@@ -179,18 +242,75 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
             </div>
           </div>
 
-          {/* Quick Notice for Event List & Chat Box */}
-          {(platform === 'eventlist' || platform === 'chatbox') && (
-            <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-purple-300">
-                <Info className="w-4 h-4 text-purple-400 shrink-0" />
-                <span>{platform === 'eventlist' ? 'URL de Event List' : 'URL de Chat Box'}</span>
+          {/* Quick Helper for Streamlabs / Event List / Chat Box */}
+          {(platform === 'streamlabs' || platform === 'eventlist' || platform === 'chatbox') && (
+            <div className="p-3.5 rounded-xl bg-teal-500/10 border border-teal-500/20 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-teal-300 flex items-center gap-1.5 uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+                  Configuración de Streamlabs:
+                </label>
+                <span className="text-[10px] text-teal-400 bg-teal-500/10 px-2 py-0.5 rounded-full border border-teal-500/20 font-medium">
+                  Pre-rellenado con tus canales
+                </span>
               </div>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                {platform === 'eventlist'
-                  ? 'Puedes usar la URL de la fuente de navegador de Streamlabs Event List, StreamElements Activity Feed, o cualquier lista de eventos en vivo.'
-                  : 'Puedes pegar la URL del widget de Chat Box de Streamlabs, StreamElements o BotRix (que unifica chats de Twitch, Kick y YouTube sin problemas de login).'}
-              </p>
+
+              {/* Subtype buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSelectStreamlabsType('eventlist')}
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
+                    streamlabsWidgetType === 'eventlist' || platform === 'eventlist'
+                      ? 'bg-teal-600 text-white border-teal-500 shadow-sm'
+                      : 'bg-zinc-950/70 text-zinc-400 border-zinc-800 hover:text-white'
+                  }`}
+                >
+                  📋 Event List
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectStreamlabsType('chatbox')}
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
+                    streamlabsWidgetType === 'chatbox' || platform === 'chatbox'
+                      ? 'bg-teal-600 text-white border-teal-500 shadow-sm'
+                      : 'bg-zinc-950/70 text-zinc-400 border-zinc-800 hover:text-white'
+                  }`}
+                >
+                  💬 Chat Box
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectStreamlabsType('alertbox')}
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
+                    streamlabsWidgetType === 'alertbox'
+                      ? 'bg-teal-600 text-white border-teal-500 shadow-sm'
+                      : 'bg-zinc-950/70 text-zinc-400 border-zinc-800 hover:text-white'
+                  }`}
+                >
+                  🚨 Alert Box
+                </button>
+              </div>
+
+              <div>
+                <span className="text-[11px] text-zinc-400 block mb-1">
+                  Token de Streamlabs (extraído de tus canales):
+                </span>
+                <input
+                  type="text"
+                  placeholder="36D393A46BDD... o pega la URL completa de tu widget"
+                  value={streamlabsToken}
+                  onChange={(e) => handleStreamlabsTokenChange(e.target.value)}
+                  className="w-full px-3 py-1.5 text-xs bg-zinc-950 border border-teal-500/30 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-teal-400 font-mono"
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+                <Info className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                <span>
+                  Conecta directamente con el WebSocket oficial de Streamlabs sin requerir login en el navegador.
+                </span>
+              </div>
             </div>
           )}
 

@@ -114,12 +114,14 @@ export const PLATFORM_PRESETS: Record<WidgetPlatform, PlatformPreset> = {
   },
 };
 
+export const DEFAULT_STREAMLABS_TOKEN = '36D393A46BDD70CA895A67745E9C82D3A50BC2EE7899917F637E9BFC43EF2F8097BBFFF6E8ADC7A03BD3A0481B4C4F666FD00AA70A3940B03D38B9ECF8FE937B4360AF61A7D409D8F9F2571A3468C8B9F13789968F5EA92478B4EF968A1081BAE9618AAEC3FD38D3524A3509880D54DCFA5A9A931779B0F3ED37A6E9BE';
+
 export const INITIAL_DEFAULT_WIDGETS: WidgetItem[] = [
   {
     id: 'user-streamlabs-chatbox',
     title: 'Streamlabs Chat Box',
     platform: 'chatbox',
-    url: 'https://streamlabs.com/widgets/chat-box/v1/36D393A46BDD70CA895A67745E9C82D3A50BC2EE7899917F637E9BFC43EF2F8097BBFFF6E8ADC7A03BD3A0481B4C4F666FD00AA70A3940B03D38B9ECF8FE937B4360AF61A7D409D8F9F2571A3468C8B9F13789968F5EA92478B4EF968A1081BAE9618AAEC3FD38D3524A3509880D54DCFA5A9A931779B0F3ED37A6E9BE',
+    url: `https://streamlabs.com/widgets/chat-box/v1/${DEFAULT_STREAMLABS_TOKEN}`,
     columnSpan: 1,
     createdAt: Date.now() - 3000,
   },
@@ -132,10 +134,10 @@ export const INITIAL_DEFAULT_WIDGETS: WidgetItem[] = [
     createdAt: Date.now() - 2000,
   },
   {
-    id: 'demo-eventlist',
-    title: 'Event List (Lista de Eventos)',
+    id: 'user-streamlabs-eventlist',
+    title: 'Streamlabs Event List',
     platform: 'eventlist',
-    url: 'about:blank',
+    url: `https://streamlabs.com/widgets/event-list/v1/${DEFAULT_STREAMLABS_TOKEN}`,
     columnSpan: 1,
     createdAt: Date.now() - 1000,
   },

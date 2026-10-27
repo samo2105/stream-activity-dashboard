@@ -38,10 +38,10 @@ export function validateWidgetUrl(url: string): { isValid: boolean; warning?: st
   if (!clean || clean === 'about:blank') return { isValid: true };
 
   // Streamlabs dashboard mistake
-  if (clean.includes('streamlabs.com/dashboard') || clean.includes('streamlabs.com/alert-box/')) {
+  if (clean.includes('streamlabs.com/dashboard')) {
     return {
       isValid: false,
-      warning: 'Has pegado el enlace del panel de Streamlabs. Debes hacer clic en "Copiar" junto a "Widget URL" (su enlace empieza por streamlabs.com/widgets/...).',
+      warning: 'Has pegado el enlace del panel de administración (dashboard) de Streamlabs. Debes copiar la "URL de la fuente del navegador" (que empieza por streamlabs.com/widgets/... o streamlabs.com/alert-box/v3/...).',
     };
   }
 
@@ -75,6 +75,17 @@ export function sanitizeStreamUrl(rawUrl: string, platform: WidgetPlatform): str
   const currentHost = typeof window !== 'undefined' && window.location.hostname 
     ? window.location.hostname 
     : 'localhost';
+
+  // 0. STREAMLABS TOKEN AUTO-FORMATTING
+  if (platform === 'streamlabs' || platform === 'chatbox' || platform === 'eventlist') {
+    const trimmed = url.trim();
+    if (/^[A-Fa-f0-9]{60,}$/.test(trimmed)) {
+      if (platform === 'chatbox') {
+        return `https://streamlabs.com/widgets/chat-box/v1/${trimmed}`;
+      }
+      return `https://streamlabs.com/widgets/event-list/v1/${trimmed}`;
+    }
+  }
 
   // 1. TWITCH DEBUGGING & FORMATTING
   if (platform === 'twitch' || url.includes('twitch.tv')) {

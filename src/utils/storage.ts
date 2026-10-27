@@ -1,5 +1,5 @@
 import { DashboardConfig, WidgetItem } from '../types/widget';
-import { INITIAL_DEFAULT_WIDGETS } from './presets';
+import { INITIAL_DEFAULT_WIDGETS, DEFAULT_STREAMLABS_TOKEN } from './presets';
 
 const STORAGE_KEY = 'streampulse_dashboard_config_v4';
 
@@ -11,6 +11,7 @@ export const DEFAULT_CONFIG: DashboardConfig = {
     kick: '',
     youtube: 'SwjSwFWmxl0',
     youtubeHandle: 'zannito',
+    streamlabsToken: DEFAULT_STREAMLABS_TOKEN,
   },
   widgets: INITIAL_DEFAULT_WIDGETS,
 };
@@ -33,6 +34,7 @@ export function loadDashboardConfig(): DashboardConfig {
             kick: parsedLegacy.channels?.kick || '',
             youtube: parsedLegacy.channels?.youtube || 'SwjSwFWmxl0',
             youtubeHandle: parsedLegacy.channels?.youtubeHandle || 'zannito',
+            streamlabsToken: parsedLegacy.channels?.streamlabsToken || DEFAULT_STREAMLABS_TOKEN,
           },
           widgets: DEFAULT_CONFIG.widgets,
         };
@@ -40,6 +42,8 @@ export function loadDashboardConfig(): DashboardConfig {
       return DEFAULT_CONFIG;
     }
     const parsed = JSON.parse(raw);
+    const resolvedToken = parsed.channels?.streamlabsToken || DEFAULT_STREAMLABS_TOKEN;
+
     return {
       columns: parsed.columns || 3,
       autoRefreshInterval: parsed.autoRefreshInterval || 0,
@@ -48,6 +52,7 @@ export function loadDashboardConfig(): DashboardConfig {
         kick: parsed.channels?.kick ?? DEFAULT_CONFIG.channels.kick,
         youtube: parsed.channels?.youtube ?? DEFAULT_CONFIG.channels.youtube,
         youtubeHandle: parsed.channels?.youtubeHandle ?? DEFAULT_CONFIG.channels.youtubeHandle,
+        streamlabsToken: resolvedToken,
       },
       widgets: Array.isArray(parsed.widgets) 
         ? parsed.widgets.map((w: WidgetItem) => {
@@ -69,6 +74,14 @@ export function loadDashboardConfig(): DashboardConfig {
                 updatedUrl += `${updatedUrl.includes('?') ? '&' : '?'}dark_theme=1`;
               }
               return { ...w, url: updatedUrl };
+            }
+            // Auto-upgrade empty demo-eventlist or about:blank eventlist to user's Streamlabs Event List
+            if (w.platform === 'eventlist' && (w.url === 'about:blank' || !w.url || w.url.includes('TU_TOKEN'))) {
+              return {
+                ...w,
+                title: 'Streamlabs Event List',
+                url: `https://streamlabs.com/widgets/event-list/v1/${resolvedToken}`,
+              };
             }
             return w;
           })
@@ -113,6 +126,7 @@ export function parseConfigFile(jsonString: string): DashboardConfig | null {
           kick: data.channels?.kick || '',
           youtube: data.channels?.youtube || '',
           youtubeHandle: data.channels?.youtubeHandle || '',
+          streamlabsToken: data.channels?.streamlabsToken || DEFAULT_STREAMLABS_TOKEN,
         },
         widgets: data.widgets,
       };

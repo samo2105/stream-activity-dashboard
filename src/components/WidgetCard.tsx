@@ -38,6 +38,7 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
   const isPlaceholder = widget.url === 'about:blank' || widget.url.includes('TU_TOKEN') || widget.url.includes('TU_CANAL');
   const isTwitch = widget.platform === 'twitch' || widget.url.includes('twitch.tv');
   const isChatbox = widget.platform === 'chatbox' || widget.url.includes('streamlabs.com/widgets/chat-box') || widget.url.includes('botrix.live/widgets/chat');
+  const isStreamlabs = widget.platform === 'streamlabs' || widget.url.includes('streamlabs.com');
 
   // Automatically sanitize and adapt URLs for iframes
   const effectiveUrl = sanitizeStreamUrl(widget.url, widget.platform);
@@ -207,15 +208,26 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
         </div>
       )}
 
-      {/* Streamlabs / Chat Box Status Note */}
-      {isChatbox && !isPlaceholder && (
+      {/* Streamlabs Status Note */}
+      {isStreamlabs && !isPlaceholder && (
         <div className="bg-teal-950/30 border-b border-teal-500/20 px-3 py-1 flex items-center justify-between text-[11px] text-teal-300">
-          <span className="truncate">
-            💬 Chat Box activo (los mensajes aparecen aquí cuando alguien escribe en tu stream).
+          <span className="truncate flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse shrink-0" />
+            <span className="truncate">
+              {isChatbox 
+                ? 'Streamlabs Chat Box (recibe chats de tus directos en tiempo real).'
+                : 'Streamlabs Event List (recibe follows, subs y alertas del stream).'}
+            </span>
           </span>
-          <span className="text-[10px] text-teal-400/80 px-1.5 py-0.5 rounded bg-teal-500/10 border border-teal-500/20">
-            En línea
-          </span>
+          <a
+            href="https://streamlabs.com/dashboard#/widgets"
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 text-[10px] text-teal-300 hover:text-white px-2 py-0.5 rounded bg-teal-500/20 hover:bg-teal-500/40 border border-teal-500/30 transition-colors ml-2"
+            title="Abre tu panel de Streamlabs para lanzar una alerta o mensaje de prueba"
+          >
+            Lanzar Prueba
+          </a>
         </div>
       )}
 

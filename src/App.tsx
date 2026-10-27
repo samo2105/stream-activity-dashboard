@@ -68,6 +68,21 @@ export function App() {
               url: `https://kick.com/popout/${encodeURIComponent(kickUser)}/chat`,
             };
           }
+          // Update Streamlabs widgets (Event List / Chat Box)
+          if (newChannels.streamlabsToken) {
+            if (w.platform === 'eventlist' || w.url.includes('streamlabs.com/widgets/event-list')) {
+              return {
+                ...w,
+                url: `https://streamlabs.com/widgets/event-list/v1/${newChannels.streamlabsToken}`,
+              };
+            }
+            if ((w.platform === 'chatbox' && w.url.includes('streamlabs.com')) || w.url.includes('streamlabs.com/widgets/chat-box')) {
+              return {
+                ...w,
+                url: `https://streamlabs.com/widgets/chat-box/v1/${newChannels.streamlabsToken}`,
+              };
+            }
+          }
           return w;
         });
       }
@@ -246,6 +261,7 @@ export function App() {
         }}
         onSave={handleSaveWidget}
         editingWidget={editingWidget}
+        channels={config.channels}
       />
 
       <PresetsModal
