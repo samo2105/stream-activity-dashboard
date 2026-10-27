@@ -1,15 +1,16 @@
 import React from 'react';
 import { Plus, Sparkles, LayoutGrid } from 'lucide-react';
-import { WidgetItem, GridColumns } from '../types/widget';
+import { WidgetItem, GridColumns, ThemeMode } from '../types/widget';
 import { WidgetCard } from './WidgetCard';
 
 interface WidgetGridProps {
   widgets: WidgetItem[];
   columns: GridColumns;
+  dashboardTheme?: ThemeMode;
   onDeleteWidget: (id: string) => void;
   onEditWidget: (widget: WidgetItem) => void;
   onToggleSpan: (id: string) => void;
-  onToggleContrast: (id: string) => void;
+  onCycleTheme: (id: string) => void;
   onOpenAddModal: () => void;
   onOpenPresetsModal: () => void;
 }
@@ -17,10 +18,11 @@ interface WidgetGridProps {
 export const WidgetGrid: React.FC<WidgetGridProps> = ({
   widgets,
   columns,
+  dashboardTheme,
   onDeleteWidget,
   onEditWidget,
   onToggleSpan,
-  onToggleContrast,
+  onCycleTheme,
   onOpenAddModal,
   onOpenPresetsModal,
 }) => {
@@ -79,10 +81,11 @@ export const WidgetGrid: React.FC<WidgetGridProps> = ({
         <WidgetCard
           key={widget.id}
           widget={widget}
+          dashboardTheme={dashboardTheme}
           onDelete={onDeleteWidget}
           onEdit={onEditWidget}
           onToggleSpan={onToggleSpan}
-          onToggleContrast={onToggleContrast}
+          onCycleTheme={onCycleTheme}
         />
       ))}
     </div>

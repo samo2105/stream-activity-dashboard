@@ -7,9 +7,11 @@ import {
   Github, 
   Tv2,
   Radio,
-  SunMoon
+  Monitor,
+  Moon,
+  Sun
 } from 'lucide-react';
-import { GridColumns, ChannelsConfig } from '../types/widget';
+import { GridColumns, ChannelsConfig, ThemeMode } from '../types/widget';
 
 interface NavbarProps {
   columns: GridColumns;
@@ -20,8 +22,8 @@ interface NavbarProps {
   onOpenProfileModal: () => void;
   channels: ChannelsConfig;
   totalWidgets: number;
-  allHighContrast?: boolean;
-  onToggleAllContrast?: () => void;
+  themeMode: ThemeMode;
+  onThemeChange: (theme: ThemeMode) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -33,11 +35,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenProfileModal,
   channels,
   totalWidgets,
-  allHighContrast,
-  onToggleAllContrast,
+  themeMode,
+  onThemeChange,
 }) => {
+  const isLight = themeMode === 'light';
+  const isDark = themeMode === 'dark';
+
   return (
-    <header className="sticky top-0 z-30 border-b border-zinc-800 bg-zinc-950/85 backdrop-blur-md px-4 py-3">
+    <header className={`sticky top-0 z-30 border-b backdrop-blur-md px-4 py-3 transition-colors ${
+      isLight 
+        ? 'bg-white/95 border-zinc-200 text-zinc-900 shadow-sm' 
+        : isDark 
+        ? 'bg-black/95 border-zinc-800 text-zinc-100' 
+        : 'bg-zinc-950/85 border-zinc-800 text-zinc-100'
+    }`}>
       <div className="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-3">
         {/* Logo & Live Status */}
         <div className="flex items-center gap-3">
@@ -46,7 +57,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
+              <h1 className={`font-bold text-base tracking-tight flex items-center gap-1.5 ${isLight ? 'text-zinc-900' : 'text-white'}`}>
                 StreamPulse
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -54,17 +65,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
               </h1>
             </div>
-            <p className="text-xs text-zinc-400 hidden sm:block">
+            <p className={`text-xs hidden sm:block ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>
               Actividad, alertas y chats multiplataforma
             </p>
           </div>
         </div>
 
-        {/* Center / Layout Controls */}
+        {/* Center / Layout & Theme Controls */}
         <div className="flex items-center gap-2">
           {/* Columns selector */}
-          <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1 text-xs">
-            <span className="text-zinc-500 px-2 flex items-center gap-1 hidden md:flex">
+          <div className={`flex items-center border rounded-lg p-1 text-xs ${
+            isLight ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-900 border-zinc-800'
+          }`}>
+            <span className={`px-2 flex items-center gap-1 hidden md:flex ${isLight ? 'text-zinc-500' : 'text-zinc-500'}`}>
               <Columns className="w-3.5 h-3.5" />
               Columnas:
             </span>
@@ -76,6 +89,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className={`px-2.5 py-1 rounded font-medium transition-all ${
                   columns === col
                     ? 'bg-purple-600 text-white shadow'
+                    : isLight
+                    ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                 }`}
                 title={`Ver en ${col} columna${col > 1 ? 's' : ''}`}
@@ -89,32 +104,66 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenPresetsModal}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 rounded-lg transition-colors"
+            className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
+              isLight
+                ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-zinc-900 border-zinc-200'
+                : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800'
+            }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             Plantillas
           </button>
 
-          {/* Global High Contrast button */}
-          {onToggleAllContrast && (
+          {/* 3-Way Theme Selector: Normal (por defecto) | Oscuro | Claro */}
+          <div className={`flex items-center border rounded-lg p-0.5 text-xs ${
+            isLight ? 'bg-zinc-100 border-zinc-200' : isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-900 border-zinc-800'
+          }`}>
             <button
               type="button"
-              onClick={onToggleAllContrast}
-              className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
-                allHighContrast
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm shadow-amber-500/10'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border-zinc-800'
+              onClick={() => onThemeChange('normal')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded font-medium transition-all ${
+                themeMode === 'normal'
+                  ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                  : isLight
+                  ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
               }`}
-              title={
-                allHighContrast
-                  ? 'Alto Contraste Global: ACTIVADO en todos los widgets. Haz clic para desactivar.'
-                  : 'Alto Contraste Global: Haz clic para activar en todos los widgets.'
-              }
+              title="Modo Normal (Por defecto: oscuro balanceado #09090b)"
             >
-              <SunMoon className={`w-3.5 h-3.5 ${allHighContrast ? 'text-amber-400' : 'text-zinc-400'}`} />
-              <span className="hidden md:inline">Alto Contraste</span>
+              <Monitor className={`w-3.5 h-3.5 ${themeMode === 'normal' ? 'text-purple-400' : ''}`} />
+              <span className="hidden md:inline">Normal</span>
             </button>
-          )}
+            <button
+              type="button"
+              onClick={() => onThemeChange('dark')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded font-medium transition-all ${
+                themeMode === 'dark'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                  : isLight
+                  ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+              }`}
+              title="Modo Oscuro (Fondo negro puro #000000 y alto contraste)"
+            >
+              <Moon className={`w-3.5 h-3.5 ${themeMode === 'dark' ? 'text-amber-400' : ''}`} />
+              <span className="hidden md:inline">Oscuro</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onThemeChange('light')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded font-medium transition-all ${
+                themeMode === 'light'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : isLight
+                  ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+              }`}
+              title="Modo Claro (Fondo blanco #ffffff y máxima luminosidad)"
+            >
+              <Sun className={`w-3.5 h-3.5 ${themeMode === 'light' ? 'text-amber-300' : ''}`} />
+              <span className="hidden md:inline">Claro</span>
+            </button>
+          </div>
         </div>
 
         {/* Action Buttons */}
@@ -123,12 +172,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenProfileModal}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-purple-500/30 rounded-lg transition-all shadow-sm"
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all shadow-sm ${
+              isLight 
+                ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-purple-300' 
+                : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-purple-500/30'
+            }`}
             title="Configurar nombres de usuario y canales de stream"
           >
             <Radio className="w-3.5 h-3.5 text-purple-400" />
-            <span className="hidden md:inline text-zinc-400 font-normal">Canal:</span>
-            <span className="text-purple-300 font-medium truncate max-w-[120px]">
+            <span className={`hidden md:inline font-normal ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>Canal:</span>
+            <span className={`font-medium truncate max-w-[120px] ${isLight ? 'text-purple-700' : 'text-purple-300'}`}>
               {channels.youtubeHandle ? `@${channels.youtubeHandle.replace(/^@/, '')}` : channels.twitch || 'Mis Canales'}
             </span>
           </button>
@@ -152,7 +205,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenSettingsModal}
-            className="p-2 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg transition-colors"
+            className={`p-2 rounded-lg transition-colors ${
+              isLight 
+                ? 'text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200' 
+                : 'text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800'
+            }`}
             title="Configuración y Copia de Seguridad"
           >
             <Settings className="w-4 h-4" />
@@ -163,7 +220,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             href="https://github.com/samo2105/stream-activity-dashboard"
             target="_blank"
             rel="noreferrer"
-            className="p-2 text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg transition-colors"
+            className={`p-2 rounded-lg transition-colors ${
+              isLight 
+                ? 'text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200' 
+                : 'text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800'
+            }`}
             title="Ver repositorio en GitHub"
           >
             <Github className="w-4 h-4" />

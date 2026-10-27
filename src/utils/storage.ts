@@ -6,6 +6,7 @@ const STORAGE_KEY = 'streampulse_dashboard_config_v4';
 export const DEFAULT_CONFIG: DashboardConfig = {
   columns: 3,
   autoRefreshInterval: 0,
+  themeMode: 'normal',
   channels: {
     twitch: 'samo2105',
     kick: '',
@@ -29,6 +30,7 @@ export function loadDashboardConfig(): DashboardConfig {
         return {
           columns: parsedLegacy.columns || 3,
           autoRefreshInterval: parsedLegacy.autoRefreshInterval || 0,
+          themeMode: parsedLegacy.themeMode || 'normal',
           channels: {
             twitch: parsedLegacy.channels?.twitch || 'samo2105',
             kick: parsedLegacy.channels?.kick || '',
@@ -47,6 +49,7 @@ export function loadDashboardConfig(): DashboardConfig {
     return {
       columns: parsed.columns || 3,
       autoRefreshInterval: parsed.autoRefreshInterval || 0,
+      themeMode: parsed.themeMode || 'normal',
       channels: {
         twitch: parsed.channels?.twitch ?? DEFAULT_CONFIG.channels.twitch,
         kick: parsed.channels?.kick ?? DEFAULT_CONFIG.channels.kick,
@@ -91,7 +94,10 @@ export function loadDashboardConfig(): DashboardConfig {
                 url: `https://streamlabs.com/widgets/chat-box/v1/${resolvedToken}`,
               };
             }
-            return w;
+            return {
+              ...w,
+              themeMode: w.themeMode || (w.highContrast ? 'dark' : 'normal'),
+            };
           })
         : DEFAULT_CONFIG.widgets,
     };

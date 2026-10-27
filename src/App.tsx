@@ -6,7 +6,7 @@ import { AddWidgetModal } from './components/AddWidgetModal';
 import { PresetsModal } from './components/PresetsModal';
 import { SettingsModal } from './components/SettingsModal';
 import { ProfileModal } from './components/ProfileModal';
-import { DashboardConfig, WidgetItem, GridColumns, ChannelsConfig } from './types/widget';
+import { DashboardConfig, WidgetItem, GridColumns, ChannelsConfig, ThemeMode } from './types/widget';
 import { loadDashboardConfig, saveDashboardConfig, DEFAULT_CONFIG } from './utils/storage';
 import { ShieldCheck, Sparkles, Layers } from 'lucide-react';
 
@@ -154,32 +154,45 @@ export function App() {
     }));
   };
 
-  // Handle Toggle High Contrast per widget
-  const handleToggleContrast = (id: string) => {
+  // Handle Toggle Theme Mode per widget: normal -> dark -> light -> normal
+  const handleCycleWidgetTheme = (id: string) => {
     setConfig((prev) => ({
       ...prev,
-      widgets: prev.widgets.map((w) =>
-        w.id === id ? { ...w, highContrast: !w.highContrast } : w
-      ),
+      widgets: prev.widgets.map((w) => {
+        if (w.id === id) {
+          const currentMode: ThemeMode = w.themeMode || prev.themeMode || 'normal';
+          let nextMode: ThemeMode = 'dark';
+          if (currentMode === 'normal') nextMode = 'dark';
+          else if (currentMode === 'dark') nextMode = 'light';
+          else if (currentMode === 'light') nextMode = 'normal';
+
+          return {
+            ...w,
+            themeMode: nextMode,
+            highContrast: nextMode === 'dark',
+          };
+        }
+        return w;
+      }),
     }));
   };
 
-  // Handle Toggle High Contrast globally across all widgets
-  const handleToggleAllContrast = () => {
-    setConfig((prev) => {
-      const anyDisabled = prev.widgets.some((w) => !w.highContrast);
-      return {
-        ...prev,
-        widgets: prev.widgets.map((w) => ({
-          ...w,
-          highContrast: anyDisabled,
-        })),
-      };
-    });
+  // Handle Global Theme Mode (Normal | Oscuro | Claro)
+  const handleGlobalThemeChange = (newTheme: ThemeMode) => {
+    setConfig((prev) => ({
+      ...prev,
+      themeMode: newTheme,
+      widgets: prev.widgets.map((w) => ({
+        ...w,
+        themeMode: newTheme,
+        highContrast: newTheme === 'dark',
+      })),
+    }));
   };
 
-  const allHighContrast =
-    config.widgets.length > 0 && config.widgets.every((w) => w.highContrast);
+  const currentThemeMode: ThemeMode = config.themeMode || 'normal';
+  const isLight = currentThemeMode === 'light';
+  const isDark = currentThemeMode === 'dark';
 
   // Handle Preset Apply
   const handleApplyPreset = (widgets: WidgetItem[], columns: GridColumns) => {
@@ -201,7 +214,13 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-950 text-zinc-100">
+    <div className={`min-h-screen flex flex-col transition-colors duration-200 ${
+      isLight 
+        ? 'bg-zinc-100 text-zinc-900' 
+        : isDark 
+        ? 'bg-black text-zinc-100' 
+        : 'bg-zinc-950 text-zinc-100'
+    }`}>
       {/* Top Navigation */}
       <Navbar
         columns={config.columns}
@@ -212,13 +231,14 @@ export function App() {
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
         channels={config.channels}
         totalWidgets={config.widgets.length}
-        allHighContrast={allHighContrast}
-        onToggleAllContrast={handleToggleAllContrast}
+        themeMode={currentThemeMode}
+        onThemeChange={handleGlobalThemeChange}
       />
 
       {/* Live Viewers Bar */}
       <ViewerBar
         channels={config.channels}
+        themeMode={currentThemeMode}
         onUpdateChannels={handleUpdateChannels}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
       />
@@ -228,26 +248,33 @@ export function App() {
         <WidgetGrid
           widgets={config.widgets}
           columns={config.columns}
+          dashboardTheme={currentThemeMode}
           onDeleteWidget={handleDeleteWidget}
           onEditWidget={handleEditWidget}
           onToggleSpan={handleToggleSpan}
-          onToggleContrast={handleToggleContrast}
+          onCycleTheme={handleCycleWidgetTheme}
           onOpenAddModal={handleOpenAdd}
           onOpenPresetsModal={() => setIsPresetsModalOpen(true)}
         />
       </main>
 
       {/* Footer Info Bar */}
-      <footer className="border-t border-zinc-900 bg-zinc-950/80 px-4 py-2.5 text-xs text-zinc-500">
+      <footer className={`border-t px-4 py-2.5 text-xs transition-colors ${
+        isLight
+          ? 'border-zinc-200 bg-white/90 text-zinc-600'
+          : isDark
+          ? 'border-zinc-900 bg-black text-zinc-400'
+          : 'border-zinc-900 bg-zinc-950/80 text-zinc-500'
+      }`}>
         <div className="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-zinc-400">
-              <Layers className="w-3.5 h-3.5 text-purple-400" />
+            <span className={`flex items-center gap-1.5 ${isLight ? 'text-zinc-600' : 'text-zinc-400'}`}>
+              <Layers className="w-3.5 h-3.5 text-purple-500" />
               <span>{config.widgets.length} widgets activos</span>
             </span>
-            <span className="text-zinc-700">•</span>
-            <span className="flex items-center gap-1.5 text-zinc-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span className={isLight ? 'text-zinc-300' : 'text-zinc-700'}>•</span>
+            <span className={`flex items-center gap-1.5 ${isLight ? 'text-zinc-600' : 'text-zinc-400'}`}>
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
               <span>Privacidad LocalStorage Activa</span>
             </span>
           </div>
@@ -256,17 +283,17 @@ export function App() {
             <button
               type="button"
               onClick={() => setIsPresetsModalOpen(true)}
-              className="hover:text-purple-400 transition-colors flex items-center gap-1"
+              className="hover:text-purple-500 transition-colors flex items-center gap-1"
             >
-              <Sparkles className="w-3 h-3 text-amber-400" />
+              <Sparkles className="w-3 h-3 text-amber-500" />
               Plantillas Rápidas
             </button>
-            <span className="text-zinc-700">•</span>
+            <span className={isLight ? 'text-zinc-300' : 'text-zinc-700'}>•</span>
             <a
               href="https://github.com/samo2105/stream-activity-dashboard"
               target="_blank"
               rel="noreferrer"
-              className="hover:text-zinc-300 transition-colors"
+              className={`transition-colors ${isLight ? 'hover:text-zinc-900 text-zinc-500' : 'hover:text-zinc-300 text-zinc-500'}`}
             >
               samo2105/stream-activity-dashboard
             </a>

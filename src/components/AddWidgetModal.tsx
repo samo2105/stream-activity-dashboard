@@ -6,9 +6,12 @@ import {
   HelpCircle, 
   Sparkles,
   Info,
-  AlertTriangle
+  AlertTriangle,
+  Monitor,
+  Moon,
+  Sun
 } from 'lucide-react';
-import { WidgetItem, WidgetPlatform, ChannelsConfig } from '../types/widget';
+import { WidgetItem, WidgetPlatform, ChannelsConfig, ThemeMode } from '../types/widget';
 import { PLATFORM_PRESETS, DEFAULT_STREAMLABS_TOKEN } from '../utils/presets';
 import { extractCleanUrl, validateWidgetUrl } from '../utils/urlHelper';
 
@@ -31,6 +34,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   const [title, setTitle] = useState<string>('');
   const [url, setUrl] = useState<string>('');
   const [columnSpan, setColumnSpan] = useState<1 | 2>(1);
+  const [themeMode, setThemeMode] = useState<ThemeMode>('normal');
 
   // Quick helper inputs for specific platforms
   const [channelName, setChannelName] = useState<string>('');
@@ -126,8 +130,10 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
           setStreamlabsWidgetType('eventlist');
         }
       }
+      setThemeMode(editingWidget.themeMode || (editingWidget.highContrast ? 'dark' : 'normal'));
     } else if (isOpen) {
       setColumnSpan(1);
+      setThemeMode('normal');
       applyPrepopulation(platform);
     }
   }, [editingWidget, isOpen]);
@@ -217,6 +223,8 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
         platform,
         url: cleanUrl,
         columnSpan,
+        themeMode,
+        highContrast: themeMode === 'dark',
       },
       editingWidget?.id
     );
@@ -500,6 +508,56 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
                 Columna Ancha (2x)
               </button>
             </div>
+          </div>
+
+          {/* Theme Mode Selector: Normal | Oscuro | Claro */}
+          <div>
+            <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+              Modo de Visualización del Widget
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setThemeMode('normal')}
+                className={`py-2 px-2 text-xs rounded-xl border font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  themeMode === 'normal'
+                    ? 'bg-purple-600/20 border-purple-500 text-purple-300 shadow-sm'
+                    : 'bg-zinc-950/40 border-zinc-800 text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Monitor className="w-3.5 h-3.5 text-purple-400" />
+                <span>Normal</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeMode('dark')}
+                className={`py-2 px-2 text-xs rounded-xl border font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  themeMode === 'dark'
+                    ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-sm'
+                    : 'bg-zinc-950/40 border-zinc-800 text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Moon className="w-3.5 h-3.5 text-amber-400" />
+                <span>Oscuro (Negro)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemeMode('light')}
+                className={`py-2 px-2 text-xs rounded-xl border font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  themeMode === 'light'
+                    ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-sm'
+                    : 'bg-zinc-950/40 border-zinc-800 text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <span>Claro (Blanco)</span>
+              </button>
+            </div>
+            <p className="text-[11px] text-zinc-500 mt-1.5">
+              {themeMode === 'normal' && 'Modo estándar balanceado con fondo oscuro.'}
+              {themeMode === 'dark' && 'Fondo negro puro (#000000) con alto contraste y brillo mejorado.'}
+              {themeMode === 'light' && 'Fondo blanco (#ffffff) ideal para chats transparentes con texto oscuro.'}
+            </p>
           </div>
         </form>
 

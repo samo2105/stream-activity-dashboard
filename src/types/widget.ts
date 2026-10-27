@@ -10,6 +10,8 @@ export type WidgetPlatform =
   | 'tiktok'
   | 'custom';
 
+export type ThemeMode = 'normal' | 'dark' | 'light';
+
 export interface WidgetItem {
   id: string;
   title: string;
@@ -17,7 +19,8 @@ export interface WidgetItem {
   url: string;
   columnSpan?: 1 | 2; // 1 = normal, 2 = wide card
   height?: number;
-  highContrast?: boolean;
+  themeMode?: ThemeMode; // 'normal' (default), 'dark' (high contrast OLED), 'light' (clean white)
+  highContrast?: boolean; // legacy compatibility fallback
   createdAt: number;
 }
 
@@ -51,6 +54,7 @@ export interface ViewerStats {
 export interface DashboardConfig {
   columns: GridColumns;
   autoRefreshInterval: number; // in seconds (0 = off)
+  themeMode?: ThemeMode; // 'normal' | 'dark' | 'light'
   channels: ChannelsConfig;
   widgets: WidgetItem[];
 }
