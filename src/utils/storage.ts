@@ -1,7 +1,7 @@
 import { DashboardConfig, WidgetItem } from '../types/widget';
 import { INITIAL_DEFAULT_WIDGETS } from './presets';
 
-const STORAGE_KEY = 'streampulse_dashboard_config_v3';
+const STORAGE_KEY = 'streampulse_dashboard_config_v4';
 
 export const DEFAULT_CONFIG: DashboardConfig = {
   columns: 3,
@@ -9,7 +9,7 @@ export const DEFAULT_CONFIG: DashboardConfig = {
   channels: {
     twitch: 'samo2105',
     kick: '',
-    youtube: '',
+    youtube: 'SwjSwFWmxl0',
   },
   widgets: INITIAL_DEFAULT_WIDGETS,
 };
@@ -18,8 +18,10 @@ export function loadDashboardConfig(): DashboardConfig {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      // Check legacy v1 or v2 keys to migrate
-      const legacy = localStorage.getItem('streampulse_dashboard_config_v2') || localStorage.getItem('streampulse_dashboard_config_v1');
+      // Check legacy keys to migrate
+      const legacy = localStorage.getItem('streampulse_dashboard_config_v3') || 
+                     localStorage.getItem('streampulse_dashboard_config_v2') || 
+                     localStorage.getItem('streampulse_dashboard_config_v1');
       if (legacy) {
         const parsedLegacy = JSON.parse(legacy);
         return {
@@ -28,19 +30,9 @@ export function loadDashboardConfig(): DashboardConfig {
           channels: {
             twitch: parsedLegacy.channels?.twitch || 'samo2105',
             kick: parsedLegacy.channels?.kick || '',
-            youtube: parsedLegacy.channels?.youtube || '',
+            youtube: parsedLegacy.channels?.youtube || 'SwjSwFWmxl0',
           },
-          widgets: Array.isArray(parsedLegacy.widgets)
-            ? parsedLegacy.widgets.map((w: WidgetItem) => {
-                if (w.url?.includes('kick.com/popout/samo2105/chat')) {
-                  return { ...w, url: 'about:blank' };
-                }
-                if (w.platform === 'chatbox' && (w.url === 'about:blank' || !w.url)) {
-                  return { ...w, url: DEFAULT_CONFIG.widgets[0].url };
-                }
-                return w;
-              })
-            : DEFAULT_CONFIG.widgets,
+          widgets: DEFAULT_CONFIG.widgets,
         };
       }
       return DEFAULT_CONFIG;

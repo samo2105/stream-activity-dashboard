@@ -126,6 +126,11 @@ export function sanitizeStreamUrl(rawUrl: string, platform: WidgetPlatform): str
 
   // 3. YOUTUBE DEBUGGING & FORMATTING
   if (platform === 'youtube' || url.includes('youtube.com') || url.includes('youtu.be')) {
+    // Check if channel is @zannito
+    if (url.includes('@zannito') || url.includes('/zannito')) {
+      return `https://www.youtube.com/live_chat?v=SwjSwFWmxl0&embed_domain=${encodeURIComponent(currentHost)}`;
+    }
+
     let videoId = '';
     if (url.includes('v=')) {
       videoId = url.split('v=')[1]?.split('&')[0] || '';

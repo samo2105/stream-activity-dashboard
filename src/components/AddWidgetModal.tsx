@@ -96,11 +96,13 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
       id = id.split('youtu.be/')[1]?.split('?')[0] || id;
     } else if (id.includes('live/')) {
       id = id.split('live/')[1]?.split('?')[0] || id;
+    } else if (id.toLowerCase() === 'zannito' || id.toLowerCase() === '@zannito' || id.includes('zannito')) {
+      id = 'SwjSwFWmxl0';
     }
     const ytUrl = `https://www.youtube.com/live_chat?v=${id}&embed_domain=${currentHost}`;
     setUrl(ytUrl);
     if (!editingWidget || title.startsWith('YouTube')) {
-      setTitle(`YouTube Chat (${id})`);
+      setTitle(id === 'SwjSwFWmxl0' ? 'YouTube Chat (@zannito - Warlock de Abismo)' : `YouTube Chat (${id})`);
     }
   };
 
@@ -241,12 +243,25 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Pega la URL o ID del stream (ej. dQw4w9WgXcQ)"
+                  placeholder="Escribe zannito o pega la URL/ID del stream"
                   value={youtubeVideoId}
                   onChange={(e) => handleGenerateYoutubeUrl(e.target.value)}
                   className="flex-1 px-3 py-1.5 text-xs bg-zinc-950 border border-red-500/30 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-red-400"
                 />
               </div>
+              <button
+                type="button"
+                onClick={() => handleGenerateYoutubeUrl('SwjSwFWmxl0')}
+                className="w-full text-[11px] text-red-300 hover:text-white bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-colors text-left"
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span>En directo ahora: <strong>@zannito</strong> (Warlock de Abismo)</span>
+                </span>
+                <span className="font-mono text-[10px] text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">
+                  ID: SwjSwFWmxl0
+                </span>
+              </button>
             </div>
           )}
 
