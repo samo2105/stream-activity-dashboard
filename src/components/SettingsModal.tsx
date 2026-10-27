@@ -7,7 +7,8 @@ import {
   ShieldCheck, 
   Check,
   Tv2,
-  Sliders
+  Sliders,
+  Activity
 } from 'lucide-react';
 import { DashboardConfig, ChannelsConfig, CounterSize } from '../types/widget';
 import { exportConfigToFile, parseConfigFile } from '../utils/storage';
@@ -18,6 +19,7 @@ interface SettingsModalProps {
   config: DashboardConfig;
   onUpdateConfig: (newConfig: DashboardConfig) => void;
   onResetDefaults: () => void;
+  onOpenHealthModal?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -26,6 +28,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   config,
   onUpdateConfig,
   onResetDefaults,
+  onOpenHealthModal,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -195,6 +198,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               ))}
             </div>
           </div>
+
+          {/* Stream Health Diagnostic Action */}
+          {onOpenHealthModal && (
+            <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-teal-500/10 border border-purple-500/20 flex items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-bold text-white flex items-center gap-1.5 mb-0.5">
+                  <Activity className="w-4 h-4 text-emerald-400 animate-pulse" />
+                  Diagnóstico de Red y Salud del Stream
+                </span>
+                <p className="text-[11px] text-zinc-400">
+                  Prueba la latencia, jitter y respuesta individual de YouTube, Twitch, Kick y Streamlabs.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenHealthModal}
+                className="shrink-0 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold shadow transition-colors"
+              >
+                Abrir Test
+              </button>
+            </div>
+          )}
 
           {/* Privacy & Security Card */}
           <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2">

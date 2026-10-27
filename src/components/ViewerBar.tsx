@@ -5,18 +5,24 @@ import {
   Check, 
   X, 
   Flame,
-  Radio
+  Radio,
+  Activity,
+  AlertCircle
 } from 'lucide-react';
 import { ChannelsConfig, ViewerStats, ThemeMode, CounterSize } from '../types/widget';
+import { StreamHealthSummary } from '../types/streamHealth';
 import { fetchAllViewerStats } from '../utils/viewers';
 
 interface ViewerBarProps {
   channels: ChannelsConfig;
   themeMode?: ThemeMode;
   counterSize?: CounterSize;
+  healthSummary?: StreamHealthSummary | null;
+  streamAlerts?: string[];
   onUpdateChannels: (channels: ChannelsConfig) => void;
   onUpdateCounterSize?: (size: CounterSize) => void;
   onOpenProfileModal?: () => void;
+  onOpenHealthModal?: () => void;
 }
 
 const REFRESH_INTERVAL_SECONDS = 15;
@@ -99,9 +105,12 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
   channels,
   themeMode,
   counterSize = 'md',
+  healthSummary,
+  streamAlerts = [],
   onUpdateChannels,
   onUpdateCounterSize,
   onOpenProfileModal,
+  onOpenHealthModal,
 }) => {
   const [stats, setStats] = useState<ViewerStats>({
     twitch: { channel: channels.twitch, viewers: 0, isLive: false, loading: true },
@@ -264,6 +273,50 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
               <span className="text-zinc-500 italic text-[10px]">No configurado</span>
             )}
           </div>
+
+          {/* Stream Connection Health Chip */}
+          <button
+            type="button"
+            onClick={onOpenHealthModal}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs transition-all hover:scale-[1.02] cursor-pointer ${
+              healthSummary?.overallRating === 'excellent'
+                ? isLight ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                : healthSummary?.overallRating === 'good'
+                ? isLight ? 'bg-teal-50 border-teal-300 text-teal-800' : 'bg-teal-500/10 border-teal-500/30 text-teal-400'
+                : healthSummary?.overallRating === 'fair'
+                ? isLight ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                : isLight ? 'bg-rose-50 border-rose-300 text-rose-800' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+            }`}
+            title="Diagnóstico de red y salud del stream (haz clic para ver el test completo de todos los servicios)"
+          >
+            <span className={`w-2 h-2 rounded-full ${
+              healthSummary?.overallRating === 'excellent' ? 'bg-emerald-400' :
+              healthSummary?.overallRating === 'good' ? 'bg-teal-400' :
+              healthSummary?.overallRating === 'fair' ? 'bg-amber-400' : 'bg-rose-400'
+            } animate-pulse shrink-0`} />
+            <Activity className="w-3.5 h-3.5 shrink-0" />
+            <span className="font-bold text-[11px]">
+              {healthSummary ? `${healthSummary.averageLatencyMs} ms` : 'Red'}
+            </span>
+            <span className="text-[10px] hidden sm:inline opacity-80">
+              ({healthSummary?.overallRating === 'excellent' ? 'Excelente' :
+                healthSummary?.overallRating === 'good' ? 'Buena' :
+                healthSummary?.overallRating === 'fair' ? 'Fluctuante' : 'Deficiente'})
+            </span>
+          </button>
+
+          {/* Stream Drop Warning Indicator (if any alerts) */}
+          {streamAlerts.length > 0 && (
+            <button
+              type="button"
+              onClick={onOpenHealthModal}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[11px] font-bold animate-pulse cursor-pointer"
+              title={streamAlerts.join(' - ')}
+            >
+              <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
+              <span>{streamAlerts.length} Caída{streamAlerts.length > 1 ? 's' : ''}</span>
+            </button>
+          )}
 
           {/* Real-Time Live Status Pill */}
           <div className={`hidden lg:flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] ${

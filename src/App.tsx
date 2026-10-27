@@ -7,7 +7,10 @@ import { PresetsModal } from './components/PresetsModal';
 import { SettingsModal } from './components/SettingsModal';
 import { ProfileModal } from './components/ProfileModal';
 import { DashboardConfig, WidgetItem, GridColumns, ChannelsConfig, ThemeMode, CounterSize } from './types/widget';
+import { StreamHealthSummary } from './types/streamHealth';
 import { loadDashboardConfig, saveDashboardConfig, DEFAULT_CONFIG } from './utils/storage';
+import { runFullHealthDiagnostics } from './utils/streamHealth';
+import { StreamHealthModal } from './components/StreamHealthModal';
 import { ShieldCheck, Sparkles, Layers } from 'lucide-react';
 
 export function App() {
@@ -16,6 +19,9 @@ export function App() {
   const [isPresetsModalOpen, setIsPresetsModalOpen] = useState<boolean>(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+  const [isHealthModalOpen, setIsHealthModalOpen] = useState<boolean>(false);
+  const [healthSummary, setHealthSummary] = useState<StreamHealthSummary | null>(null);
+  const [streamAlerts, setStreamAlerts] = useState<string[]>([]);
   const [editingWidget, setEditingWidget] = useState<WidgetItem | null>(null);
 
   // Sync with localStorage on config changes
@@ -195,6 +201,25 @@ export function App() {
     setConfig((prev) => ({ ...prev, counterSize }));
   };
 
+  // Run Real-Time Stream Health & Network Diagnostics
+  const handleRefreshHealth = async () => {
+    try {
+      const summary = await runFullHealthDiagnostics();
+      setHealthSummary(summary);
+      if (summary.overallRating === 'poor' || summary.overallRating === 'offline') {
+        setStreamAlerts((prev) => Array.from(new Set([...prev, summary.recommendation])));
+      }
+    } catch (err) {
+      console.error('Error al ejecutar diagnósticos de red:', err);
+    }
+  };
+
+  useEffect(() => {
+    handleRefreshHealth();
+    const healthInterval = setInterval(handleRefreshHealth, 30000);
+    return () => clearInterval(healthInterval);
+  }, []);
+
   const currentThemeMode: ThemeMode = config.themeMode || 'normal';
   const isLight = currentThemeMode === 'light';
   const isDark = currentThemeMode === 'dark';
@@ -245,9 +270,12 @@ export function App() {
         channels={config.channels}
         themeMode={currentThemeMode}
         counterSize={config.counterSize || 'md'}
+        healthSummary={healthSummary}
+        streamAlerts={streamAlerts}
         onUpdateChannels={handleUpdateChannels}
         onUpdateCounterSize={handleUpdateCounterSize}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onOpenHealthModal={() => setIsHealthModalOpen(true)}
       />
 
       {/* Main Stream Activity Grid */}
@@ -340,6 +368,18 @@ export function App() {
         config={config}
         onUpdateConfig={setConfig}
         onResetDefaults={handleResetDefaults}
+        onOpenHealthModal={() => {
+          setIsSettingsModalOpen(false);
+          setIsHealthModalOpen(true);
+        }}
+      />
+
+      <StreamHealthModal
+        isOpen={isHealthModalOpen}
+        onClose={() => setIsHealthModalOpen(false)}
+        healthSummary={healthSummary}
+        onRefreshHealth={handleRefreshHealth}
+        streamAlerts={streamAlerts}
       />
     </div>
   );
