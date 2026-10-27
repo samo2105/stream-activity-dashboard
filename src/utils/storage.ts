@@ -1,4 +1,4 @@
-import { DashboardConfig } from '../types/widget';
+import { DashboardConfig, WidgetItem } from '../types/widget';
 import { INITIAL_DEFAULT_WIDGETS } from './presets';
 
 const STORAGE_KEY = 'streampulse_dashboard_config_v2';
@@ -40,7 +40,15 @@ export function loadDashboardConfig(): DashboardConfig {
         kick: parsed.channels?.kick ?? DEFAULT_CONFIG.channels.kick,
         youtube: parsed.channels?.youtube ?? DEFAULT_CONFIG.channels.youtube,
       },
-      widgets: Array.isArray(parsed.widgets) ? parsed.widgets : DEFAULT_CONFIG.widgets,
+      widgets: Array.isArray(parsed.widgets) 
+        ? parsed.widgets.map((w: WidgetItem) => ({
+            ...w,
+            // Automatically upgrade legacy broken popout URLs to embed
+            url: w.url?.includes('twitch.tv/popout/') 
+              ? w.url.replace('/popout/', '/embed/').concat('&parent=samo2105.github.io')
+              : w.url
+          }))
+        : DEFAULT_CONFIG.widgets,
     };
   } catch (error) {
     console.error('Error al cargar la configuración de localStorage:', error);

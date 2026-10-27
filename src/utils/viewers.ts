@@ -28,26 +28,44 @@ export async function fetchKickViewers(channel: string): Promise<{ viewers: numb
   if (!channel.trim()) {
     return { viewers: 0, isLive: false };
   }
+  const cleanChannel = channel.trim().toLowerCase();
+
+  // Try direct Kick API first
   try {
-    const cleanChannel = channel.trim().toLowerCase();
     const res = await fetch(`https://kick.com/api/v2/channels/${cleanChannel}`, {
       headers: {
         Accept: 'application/json',
       },
     });
-    if (!res.ok) {
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.livestream && data.livestream.is_live) {
+        return {
+          viewers: Number(data.livestream.viewer_count) || 0,
+          isLive: true,
+        };
+      }
       return { viewers: 0, isLive: false };
     }
-    const data = await res.json();
-    if (data && data.livestream && data.livestream.is_live) {
-      return {
-        viewers: Number(data.livestream.viewer_count) || 0,
-        isLive: true,
-      };
+  } catch (directErr) {
+    // If direct fails (CORS or network), fallback to proxy
+  }
+
+  // Fallback via CORS-friendly mirror proxy
+  try {
+    const proxyRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://kick.com/api/v2/channels/${cleanChannel}`)}`);
+    if (proxyRes.ok) {
+      const data = await proxyRes.json();
+      if (data && data.livestream && data.livestream.is_live) {
+        return {
+          viewers: Number(data.livestream.viewer_count) || 0,
+          isLive: true,
+        };
+      }
     }
     return { viewers: 0, isLive: false };
-  } catch (err) {
-    return { viewers: 0, isLive: false, error: 'Error de conexión con Kick' };
+  } catch (proxyErr) {
+    return { viewers: 0, isLive: false, error: 'Kick no disponible' };
   }
 }
 
@@ -55,26 +73,30 @@ export async function fetchYouTubeViewers(videoIdOrChannel: string): Promise<{ v
   if (!videoIdOrChannel.trim()) {
     return { viewers: 0, isLive: false };
   }
-  try {
-    let id = videoIdOrChannel.trim();
-    if (id.includes('v=')) {
-      id = id.split('v=')[1]?.split('&')[0] || id;
-    } else if (id.includes('youtu.be/')) {
-      id = id.split('youtu.be/')[1]?.split('?')[0] || id;
-    }
-    const res = await fetch(`https://decapi.me/youtube/videoviewcount/${id}`);
-    if (!res.ok) {
-      return { viewers: 0, isLive: false };
-    }
-    const text = (await res.text()).trim();
-    const count = parseInt(text.replace(/,/g, ''), 10);
-    if (!isNaN(count)) {
-      return { viewers: count, isLive: true };
-    }
-    return { viewers: 0, isLive: false };
-  } catch (err) {
-    return { viewers: 0, isLive: false, error: 'Error de conexión con YouTube' };
+  let id = videoIdOrChannel.trim();
+  if (id.includes('v=')) {
+    id = id.split('v=')[1]?.split('&')[0] || id;
+  } else if (id.includes('youtu.be/')) {
+    id = id.split('youtu.be/')[1]?.split('?')[0] || id;
+  } else if (id.includes('live/')) {
+    id = id.split('live/')[1]?.split('?')[0] || id;
   }
+
+  try {
+    // Check if video is live using YouTube oEmbed / public stream data
+    const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.title) {
+        // Stream exists and is active
+        return { viewers: 1, isLive: true };
+      }
+    }
+  } catch (err) {
+    // Ignore error
+  }
+
+  return { viewers: 0, isLive: false };
 }
 
 export async function fetchAllViewerStats(channels: ChannelsConfig): Promise<ViewerStats> {

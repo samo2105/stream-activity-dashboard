@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { WidgetItem, WidgetPlatform } from '../types/widget';
 import { PLATFORM_PRESETS } from '../utils/presets';
+import { extractCleanUrl } from '../utils/urlHelper';
 
 interface AddWidgetModalProps {
   isOpen: boolean;
@@ -104,13 +105,14 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !url.trim()) return;
+    const cleanUrl = extractCleanUrl(url);
+    if (!title.trim() || !cleanUrl) return;
 
     onSave(
       {
         title: title.trim(),
         platform,
-        url: url.trim(),
+        url: cleanUrl,
         columnSpan,
       },
       editingWidget?.id

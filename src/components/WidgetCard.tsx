@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { WidgetItem } from '../types/widget';
 import { PLATFORM_PRESETS } from '../utils/presets';
+import { sanitizeStreamUrl } from '../utils/urlHelper';
 
 interface WidgetCardProps {
   widget: WidgetItem;
@@ -34,6 +35,9 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
   const preset = PLATFORM_PRESETS[widget.platform] || PLATFORM_PRESETS.custom;
   const isPlaceholder = widget.url === 'about:blank' || widget.url.includes('TU_TOKEN') || widget.url.includes('TU_CANAL');
   const isTwitch = widget.platform === 'twitch' || widget.url.includes('twitch.tv');
+
+  // Automatically sanitize and adapt URLs for iframes
+  const effectiveUrl = sanitizeStreamUrl(widget.url, widget.platform);
 
   const handleReload = () => {
     setIsLoading(true);
@@ -119,7 +123,7 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
           {/* External Link */}
           {!isPlaceholder && (
             <a
-              href={widget.url}
+              href={effectiveUrl}
               target="_blank"
               rel="noreferrer"
               className="p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded transition-colors"
@@ -151,20 +155,20 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
         </div>
       </div>
 
-      {/* Twitch Connection Refused Hint if needed */}
+      {/* Twitch Special Helper Hint */}
       {isTwitch && (
         <div className="bg-purple-950/40 border-b border-purple-500/20 px-3 py-1 flex items-center justify-between text-[11px] text-purple-300">
           <span className="truncate">
-            ¿Twitch rechazó la conexión? Requiere parent coincidente o usa una <strong>Chat Box URL</strong>.
+            Modo Twitch Embed activo.
           </span>
           <a
-            href={widget.url.replace('/embed/', '/popout/')}
+            href={effectiveUrl.replace('/embed/', '/popout/')}
             target="_blank"
             rel="noreferrer"
             className="shrink-0 ml-2 inline-flex items-center gap-1 text-[10px] bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 px-1.5 py-0.5 rounded transition-colors"
           >
             <ExternalLink className="w-2.5 h-2.5" />
-            Abrir Popout
+            Popout Externo
           </a>
         </div>
       )}
@@ -199,7 +203,7 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
             </button>
           </div>
         ) : (
-          /* Real Iframe View */
+          /* Real Iframe View with Unrestricted Stream Capabilities */
           <>
             {isLoading && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-sm pointer-events-none">
@@ -209,12 +213,11 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
             )}
             <iframe
               key={reloadKey}
-              src={widget.url}
+              src={effectiveUrl}
               title={widget.title}
               onLoad={() => setIsLoading(false)}
               className="w-full h-full border-0 bg-transparent"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
-              allow="autoplay; encrypted-media; fullscreen; picture-in-picture; display-capture"
+              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen"
             />
           </>
         )}
@@ -222,12 +225,12 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
 
       {/* Card Footer: Security / URL indicator */}
       <div className="px-3 py-1.5 bg-zinc-950/60 border-t border-zinc-800/60 flex items-center justify-between text-[11px] text-zinc-500">
-        <span className="truncate max-w-[280px]" title={widget.url}>
-          {isPlaceholder ? 'Pendiente de configurar URL' : widget.url.replace(/^https?:\/\//, '')}
+        <span className="truncate max-w-[280px]" title={effectiveUrl}>
+          {isPlaceholder ? 'Pendiente de configurar URL' : effectiveUrl.replace(/^https?:\/\//, '')}
         </span>
         <span className="flex items-center gap-1 text-[10px] text-zinc-400">
           <AlertCircle className="w-3 h-3 text-emerald-500" />
-          iFrame Seguro
+          Fuente Web Activa
         </span>
       </div>
     </div>
