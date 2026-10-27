@@ -27,6 +27,7 @@ export interface ChannelsConfig {
   kick: string;
   youtube: string;
   youtubeHandle?: string;
+  youtubeApiKey?: string;
   streamlabsToken?: string;
 }
 

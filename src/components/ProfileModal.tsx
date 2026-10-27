@@ -19,6 +19,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 }) => {
   const [youtubeChannel, setYoutubeChannel] = useState<string>(channels.youtube || '');
   const [youtubeStreamId, setYoutubeStreamId] = useState<string>(channels.youtube || '');
+  const [youtubeApiKey, setYoutubeApiKey] = useState<string>(channels.youtubeApiKey || '');
   const [twitchChannel, setTwitchChannel] = useState<string>(channels.twitch || '');
   const [kickChannel, setKickChannel] = useState<string>(channels.kick || '');
   const [streamlabsToken, setStreamlabsToken] = useState<string>(channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN);
@@ -29,6 +30,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   useEffect(() => {
     setYoutubeChannel(channels.youtubeHandle || (channels.youtube === 'SwjSwFWmxl0' ? 'zannito' : channels.youtube) || '');
     setYoutubeStreamId(channels.youtube || '');
+    setYoutubeApiKey(channels.youtubeApiKey || '');
     setTwitchChannel(channels.twitch || '');
     setKickChannel(channels.kick || '');
     setStreamlabsToken(channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN);
@@ -68,7 +70,23 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     setScanMessage('Escaneando canal de YouTube en vivo...');
 
     try {
-      // Known active stream for @zannito
+      // 1. First attempt: DecAPI latest video resolution by handle
+      try {
+        const decRes = await fetch(`https://decapi.me/youtube/latest_video?handle=${encodeURIComponent(handle)}&format=%7Bid%7D&_t=${Date.now()}`);
+        if (decRes.ok) {
+          const decId = (await decRes.text()).trim();
+          if (/^[a-zA-Z0-9_-]{11}$/.test(decId)) {
+            setYoutubeStreamId(decId);
+            setScanMessage(`¡Directo/Video detectado con éxito! ID: ${decId}`);
+            setIsScanning(false);
+            return;
+          }
+        }
+      } catch {
+        // Fallback to proxy
+      }
+
+      // 2. Known active stream for @zannito
       if (handle.toLowerCase() === 'zannito') {
         setYoutubeStreamId('SwjSwFWmxl0');
         setScanMessage('¡Directo encontrado! ID: SwjSwFWmxl0 ("Warlock de Abismo! | D2R Ladder")');
@@ -76,7 +94,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         return;
       }
 
-      // Try resolving via public proxies
+      // 3. Try resolving via public proxies
       const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.youtube.com/@${handle}/live`)}`;
       const res = await fetch(proxyUrl);
       if (res.ok) {
@@ -112,11 +130,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     const cleanKick = kickChannel.trim().replace(/^@/, '');
     const cleanYtHandle = youtubeChannel.trim().replace(/^@/, '');
     const cleanStreamlabs = streamlabsToken.trim();
+    const cleanApiKey = youtubeApiKey.trim();
 
     onSaveChannels(
       {
         youtube: cleanYt || (cleanYtHandle.toLowerCase() === 'zannito' ? 'SwjSwFWmxl0' : cleanYtHandle),
         youtubeHandle: cleanYtHandle,
+        youtubeApiKey: cleanApiKey || undefined,
         twitch: cleanTwitch,
         kick: cleanKick,
         streamlabsToken: cleanStreamlabs || DEFAULT_STREAMLABS_TOKEN,
@@ -200,6 +220,22 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   className="w-full px-3 py-1.5 bg-zinc-950 border border-red-500/30 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-400 font-mono"
                 />
               </div>
+            </div>
+
+            <div>
+              <span className="text-[11px] text-zinc-400 block mb-1">
+                YouTube Data API Key (Opcional, Google Cloud):
+              </span>
+              <input
+                type="text"
+                placeholder="Pega tu API Key de Google (opcional para conteo oficial de espectadores en tiempo real)"
+                value={youtubeApiKey}
+                onChange={(e) => setYoutubeApiKey(e.target.value)}
+                className="w-full px-3 py-1.5 bg-zinc-950 border border-red-500/30 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-400 font-mono"
+              />
+              <p className="text-[10px] text-zinc-500 mt-1">
+                Opcional: Si cuentas con una clave gratuita de YouTube Data API v3, permite obtener la cantidad exacta y oficial de espectadores concurrentes de tus directos.
+              </p>
             </div>
 
             {scanMessage && (

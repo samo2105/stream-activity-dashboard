@@ -5,17 +5,17 @@ export async function fetchTwitchViewers(channel: string): Promise<{ viewers: nu
     return { viewers: 0, isLive: false };
   }
   try {
-    const cleanChannel = channel.trim().toLowerCase();
-    const res = await fetch(`https://decapi.me/twitch/viewercount/${cleanChannel}`);
+    const cleanChannel = channel.trim().toLowerCase().replace(/^@/, '');
+    const res = await fetch(`https://decapi.me/twitch/viewercount/${cleanChannel}?_t=${Date.now()}`);
     if (!res.ok) {
       return { viewers: 0, isLive: false, error: 'No se pudo consultar Twitch' };
     }
     const text = (await res.text()).trim();
-    if (text.includes('offline') || text.includes('not found') || text.includes('User not found')) {
+    if (text.includes('offline') || text.includes('not found') || text.includes('User not found') || text.includes('error')) {
       return { viewers: 0, isLive: false };
     }
     const count = parseInt(text.replace(/,/g, ''), 10);
-    if (!isNaN(count)) {
+    if (!isNaN(count) && count >= 0) {
       return { viewers: count, isLive: true };
     }
     return { viewers: 0, isLive: false };
@@ -28,11 +28,11 @@ export async function fetchKickViewers(channel: string): Promise<{ viewers: numb
   if (!channel.trim()) {
     return { viewers: 0, isLive: false };
   }
-  const cleanChannel = channel.trim().toLowerCase();
+  const cleanChannel = channel.trim().toLowerCase().replace(/^@/, '');
 
-  // Try direct Kick API first
+  // Direct Kick API (supports CORS natively for client requests)
   try {
-    const res = await fetch(`https://kick.com/api/v2/channels/${cleanChannel}`, {
+    const res = await fetch(`https://kick.com/api/v2/channels/${cleanChannel}?_t=${Date.now()}`, {
       headers: {
         Accept: 'application/json',
       },
@@ -48,31 +48,21 @@ export async function fetchKickViewers(channel: string): Promise<{ viewers: numb
       return { viewers: 0, isLive: false };
     }
   } catch (directErr) {
-    // If direct fails (CORS or network), fallback to proxy
+    // If blocked by browser adblock or strict network policy
   }
 
-  // Fallback via CORS-friendly mirror proxy
-  try {
-    const proxyRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://kick.com/api/v2/channels/${cleanChannel}`)}`);
-    if (proxyRes.ok) {
-      const data = await proxyRes.json();
-      if (data && data.livestream && data.livestream.is_live) {
-        return {
-          viewers: Number(data.livestream.viewer_count) || 0,
-          isLive: true,
-        };
-      }
-    }
-    return { viewers: 0, isLive: false };
-  } catch (proxyErr) {
-    return { viewers: 0, isLive: false, error: 'Kick no disponible' };
-  }
+  return { viewers: 0, isLive: false };
 }
 
-export async function fetchYouTubeViewers(videoIdOrChannel: string): Promise<{ viewers: number; isLive: boolean; error?: string }> {
-  if (!videoIdOrChannel.trim()) {
+export async function fetchYouTubeViewers(
+  videoIdOrChannel: string,
+  apiKey?: string,
+  handle?: string
+): Promise<{ viewers: number; isLive: boolean; error?: string }> {
+  if (!videoIdOrChannel.trim() && !handle?.trim()) {
     return { viewers: 0, isLive: false };
   }
+
   let id = videoIdOrChannel.trim();
   if (id.includes('v=')) {
     id = id.split('v=')[1]?.split('&')[0] || id;
@@ -82,18 +72,62 @@ export async function fetchYouTubeViewers(videoIdOrChannel: string): Promise<{ v
     id = id.split('live/')[1]?.split('?')[0] || id;
   }
 
-  try {
-    // Check if video is live using YouTube oEmbed / public stream data
-    const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.title) {
-        // Stream exists and is active
-        return { viewers: 1, isLive: true };
+  // If handle provided without a video ID, try resolving the latest video ID from DecAPI
+  if ((!id || id.startsWith('@')) && handle) {
+    try {
+      const cleanH = handle.replace(/^@/, '');
+      const decRes = await fetch(`https://decapi.me/youtube/latest_video?handle=${cleanH}&format=%7Bid%7D&_t=${Date.now()}`);
+      if (decRes.ok) {
+        const resolvedId = (await decRes.text()).trim();
+        if (/^[a-zA-Z0-9_-]{11}$/.test(resolvedId)) {
+          id = resolvedId;
+        }
       }
+    } catch {
+      // Ignore resolution error
     }
-  } catch (err) {
-    // Ignore error
+  }
+
+  // 1. Official YouTube Data API v3 (if apiKey is configured by user in Profile Settings)
+  if (apiKey && id && /^[a-zA-Z0-9_-]{11}$/.test(id)) {
+    try {
+      const url = `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${id}&key=${apiKey}&_t=${Date.now()}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        const item = data?.items?.[0];
+        if (item) {
+          const ls = item.liveStreamingDetails;
+          if (ls && ls.concurrentViewers && !ls.actualEndTime) {
+            return {
+              viewers: parseInt(ls.concurrentViewers, 10) || 0,
+              isLive: true,
+            };
+          }
+          // Video exists but stream is offline/ended/VOD
+          return { viewers: 0, isLive: false };
+        }
+      }
+    } catch (apiErr) {
+      console.warn('Error al consultar YouTube Data API:', apiErr);
+    }
+  }
+
+  // 2. Fallback check: verify if video/stream exists via oEmbed
+  if (id && /^[a-zA-Z0-9_-]{11}$/.test(id)) {
+    try {
+      const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}&_t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.title) {
+          // Stream exists. Without API key, YouTube does not expose concurrent viewers without quota.
+          // We return offline (0 viewers) so we don't display a fake static 1 viewer.
+          return { viewers: 0, isLive: false };
+        }
+      }
+    } catch {
+      // Ignore
+    }
   }
 
   return { viewers: 0, isLive: false };
@@ -102,9 +136,15 @@ export async function fetchYouTubeViewers(videoIdOrChannel: string): Promise<{ v
 export async function fetchAllViewerStats(channels: ChannelsConfig): Promise<ViewerStats> {
   type FetchRes = { viewers: number; isLive: boolean; error?: string };
   const [twitchRes, kickRes, ytRes] = await Promise.all([
-    channels.twitch ? fetchTwitchViewers(channels.twitch) : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
-    channels.kick ? fetchKickViewers(channels.kick) : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
-    channels.youtube ? fetchYouTubeViewers(channels.youtube) : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
+    channels.twitch 
+      ? fetchTwitchViewers(channels.twitch) 
+      : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
+    channels.kick 
+      ? fetchKickViewers(channels.kick) 
+      : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
+    channels.youtube || channels.youtubeHandle
+      ? fetchYouTubeViewers(channels.youtube, channels.youtubeApiKey, channels.youtubeHandle)
+      : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
   ]);
 
   const total = (twitchRes.isLive ? twitchRes.viewers : 0) +

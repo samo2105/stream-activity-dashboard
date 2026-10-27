@@ -52,6 +52,7 @@ export function loadDashboardConfig(): DashboardConfig {
         kick: parsed.channels?.kick ?? DEFAULT_CONFIG.channels.kick,
         youtube: parsed.channels?.youtube ?? DEFAULT_CONFIG.channels.youtube,
         youtubeHandle: parsed.channels?.youtubeHandle ?? DEFAULT_CONFIG.channels.youtubeHandle,
+        youtubeApiKey: parsed.channels?.youtubeApiKey || undefined,
         streamlabsToken: resolvedToken,
       },
       widgets: Array.isArray(parsed.widgets) 
@@ -81,6 +82,13 @@ export function loadDashboardConfig(): DashboardConfig {
                 ...w,
                 title: 'Streamlabs Event List',
                 url: `https://streamlabs.com/widgets/event-list/v1/${resolvedToken}`,
+              };
+            }
+            if ((w.platform === 'chatbox' || (w.platform === 'streamlabs' && w.url?.includes('chat-box'))) && (w.url === 'about:blank' || !w.url || w.url.includes('TU_TOKEN'))) {
+              return {
+                ...w,
+                title: 'Streamlabs Chat Box',
+                url: `https://streamlabs.com/widgets/chat-box/v1/${resolvedToken}`,
               };
             }
             return w;
@@ -126,6 +134,7 @@ export function parseConfigFile(jsonString: string): DashboardConfig | null {
           kick: data.channels?.kick || '',
           youtube: data.channels?.youtube || '',
           youtubeHandle: data.channels?.youtubeHandle || '',
+          youtubeApiKey: data.channels?.youtubeApiKey || undefined,
           streamlabsToken: data.channels?.streamlabsToken || DEFAULT_STREAMLABS_TOKEN,
         },
         widgets: data.widgets,

@@ -280,6 +280,7 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
               title={widget.title}
               onLoad={() => setIsLoading(false)}
               className="w-full h-full border-0"
+              referrerPolicy="no-referrer"
               style={{
                 backgroundColor: contrastMode === 'light' ? '#ffffff' : contrastMode === 'contrast' ? '#18181b' : '#09090b',
                 colorScheme: contrastMode === 'light' ? 'light' : 'dark',

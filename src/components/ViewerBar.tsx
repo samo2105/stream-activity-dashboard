@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   RotateCw, 
   Edit2, 
@@ -16,6 +16,8 @@ interface ViewerBarProps {
   onOpenProfileModal?: () => void;
 }
 
+const REFRESH_INTERVAL_SECONDS = 15;
+
 export const ViewerBar: React.FC<ViewerBarProps> = ({
   channels,
   onUpdateChannels,
@@ -31,26 +33,44 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editChannels, setEditChannels] = useState<ChannelsConfig>(channels);
+  const [countdown, setCountdown] = useState<number>(REFRESH_INTERVAL_SECONDS);
+  const [lastUpdatedTime, setLastUpdatedTime] = useState<string>('');
+
+  const channelsRef = useRef(channels);
+  channelsRef.current = channels;
 
   const refreshStats = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const newStats = await fetchAllViewerStats(channels);
+      const newStats = await fetchAllViewerStats(channelsRef.current);
       setStats(newStats);
+      const now = new Date();
+      setLastUpdatedTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (e) {
       console.error('Error al actualizar viewers:', e);
     } finally {
       setIsRefreshing(false);
+      setCountdown(REFRESH_INTERVAL_SECONDS);
     }
-  }, [channels]);
+  }, []);
 
+  // Run on mount or when channels change
   useEffect(() => {
     refreshStats();
-    // Auto-refresh viewers every 45 seconds
-    const interval = setInterval(() => {
-      refreshStats();
-    }, 45000);
-    return () => clearInterval(interval);
+  }, [channels, refreshStats]);
+
+  // Real-time 1-second countdown ticker
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          refreshStats();
+          return REFRESH_INTERVAL_SECONDS;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
   }, [refreshStats]);
 
   useEffect(() => {
@@ -61,6 +81,11 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
     e.preventDefault();
     onUpdateChannels(editChannels);
     setIsEditing(false);
+  };
+
+  const handleManualRefresh = () => {
+    setCountdown(REFRESH_INTERVAL_SECONDS);
+    refreshStats();
   };
 
   return (
@@ -125,8 +150,11 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 border border-red-500/30 text-zinc-200">
             <span className="w-2 h-2 rounded-full bg-red-500" />
             <span className="font-semibold text-[11px] text-red-300">YouTube</span>
-            {channels.youtube ? (
+            {channels.youtube || channels.youtubeHandle ? (
               <span className="flex items-center gap-1 text-[11px]">
+                <span className="text-zinc-500">
+                  ({channels.youtubeHandle ? `@${channels.youtubeHandle.replace(/^@/, '')}` : channels.youtube})
+                </span>
                 {stats.youtube.isLive ? (
                   <span className="font-bold text-red-400 flex items-center gap-1">
                     <Radio className="w-3 h-3 animate-pulse" />
@@ -138,6 +166,19 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
               </span>
             ) : (
               <span className="text-zinc-500 italic text-[10px]">No configurado</span>
+            )}
+          </div>
+
+          {/* Real-Time Live Status Pill */}
+          <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-900/90 border border-zinc-800 text-[10px] text-zinc-400">
+            <span className={`w-1.5 h-1.5 rounded-full ${isRefreshing ? 'bg-amber-400 animate-spin' : 'bg-emerald-400 animate-pulse'}`} />
+            <span>
+              {isRefreshing ? 'Actualizando...' : `Actualizando en ${countdown}s`}
+            </span>
+            {lastUpdatedTime && (
+              <span className="text-zinc-600 border-l border-zinc-800 pl-1.5">
+                {lastUpdatedTime}
+              </span>
             )}
           </div>
         </div>
@@ -203,13 +244,13 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
 
               <button
                 type="button"
-                onClick={refreshStats}
+                onClick={handleManualRefresh}
                 disabled={isRefreshing}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors text-[11px]"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors text-[11px]"
                 title="Actualizar recuento de viewers ahora"
               >
                 <RotateCw className={`w-3 h-3 text-amber-400 ${isRefreshing ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Actualizar</span>
+                <span className="hidden sm:inline">Actualizar ({countdown}s)</span>
               </button>
             </>
           )}
