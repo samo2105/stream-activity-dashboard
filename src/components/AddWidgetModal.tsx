@@ -5,11 +5,12 @@ import {
   Save, 
   HelpCircle, 
   Sparkles,
-  Info
+  Info,
+  AlertTriangle
 } from 'lucide-react';
 import { WidgetItem, WidgetPlatform } from '../types/widget';
 import { PLATFORM_PRESETS } from '../utils/presets';
-import { extractCleanUrl } from '../utils/urlHelper';
+import { extractCleanUrl, validateWidgetUrl } from '../utils/urlHelper';
 
 interface AddWidgetModalProps {
   isOpen: boolean;
@@ -66,7 +67,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   const handleGenerateTwitchUrl = (user: string) => {
     setChannelName(user);
     if (!user.trim()) return;
-    const cleanUser = user.trim().toLowerCase();
+    const cleanUser = user.trim().replace(/^@/, '').toLowerCase();
     // Twitch embed format requires parent parameter to allow iframe rendering
     const twitchEmbedUrl = `https://www.twitch.tv/embed/${cleanUser}/chat?parent=${currentHost}&parent=samo2105.github.io&darkpopout`;
     setUrl(twitchEmbedUrl);
@@ -78,7 +79,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   const handleGenerateKickUrl = (user: string) => {
     setChannelName(user);
     if (!user.trim()) return;
-    const cleanUser = user.trim().toLowerCase();
+    const cleanUser = user.trim().replace(/^@/, '').toLowerCase();
     const kickUrl = `https://kick.com/popout/${cleanUser}/chat`;
     setUrl(kickUrl);
     if (!editingWidget || title.startsWith('Kick')) {
@@ -287,6 +288,12 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
               placeholder={currentPreset.placeholderUrl}
               className="w-full px-3.5 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 font-mono text-xs transition-all"
             />
+            {validateWidgetUrl(url).warning && (
+              <div className="mt-2 p-2.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                <span>{validateWidgetUrl(url).warning}</span>
+              </div>
+            )}
             <p className="text-[11px] text-zinc-500 mt-1 flex items-center gap-1">
               <span>La URL se almacenará de manera privada y local en tu navegador.</span>
             </p>

@@ -31,6 +31,40 @@ export function extractCleanUrl(input: string): string {
 }
 
 /**
+ * Checks if a pasted URL is an internal admin/dashboard URL instead of the public widget URL.
+ */
+export function validateWidgetUrl(url: string): { isValid: boolean; warning?: string } {
+  const clean = extractCleanUrl(url);
+  if (!clean || clean === 'about:blank') return { isValid: true };
+
+  // Streamlabs dashboard mistake
+  if (clean.includes('streamlabs.com/dashboard') || clean.includes('streamlabs.com/alert-box/')) {
+    return {
+      isValid: false,
+      warning: 'Has pegado el enlace del panel de Streamlabs. Debes hacer clic en "Copiar" junto a "Widget URL" (su enlace empieza por streamlabs.com/widgets/...).',
+    };
+  }
+
+  // BotRix panel mistake
+  if (clean.includes('botrix.live/panel')) {
+    return {
+      isValid: false,
+      warning: 'Has pegado el enlace de administración de BotRix. Debes copiar la "URL de la fuente del navegador" que empieza por botrix.live/widgets/...',
+    };
+  }
+
+  // StreamElements dashboard mistake
+  if (clean.includes('streamelements.com/dashboard')) {
+    return {
+      isValid: false,
+      warning: 'Has pegado el panel de StreamElements. Ve a Mis Overlays -> Menú de 3 puntos -> "Copiar URL del Overlay".',
+    };
+  }
+
+  return { isValid: true };
+}
+
+/**
  * Sanitizes and formats stream URLs for each platform so they load properly inside iframes
  * without triggering X-Frame-Options or CSP blocking.
  */
@@ -44,12 +78,10 @@ export function sanitizeStreamUrl(rawUrl: string, platform: WidgetPlatform): str
 
   // 1. TWITCH DEBUGGING & FORMATTING
   if (platform === 'twitch' || url.includes('twitch.tv')) {
-    // Check if user provided a popout or raw channel URL instead of embed
-    // e.g., https://www.twitch.tv/popout/channel/chat -> converts to embed with parent
     let channel = '';
-    const popoutMatch = url.match(/twitch\.tv\/popout\/([a-zA-Z0-9_]+)/i);
-    const standardMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)(?:\/chat)?$/i);
-    const embedMatch = url.match(/twitch\.tv\/embed\/([a-zA-Z0-9_]+)/i);
+    const popoutMatch = url.match(/twitch\.tv\/popout\/@?([a-zA-Z0-9_]+)/i);
+    const standardMatch = url.match(/twitch\.tv\/@?([a-zA-Z0-9_]+)(?:\/chat)?$/i);
+    const embedMatch = url.match(/twitch\.tv\/embed\/@?([a-zA-Z0-9_]+)/i);
 
     if (embedMatch && embedMatch[1]) {
       channel = embedMatch[1];
@@ -60,13 +92,12 @@ export function sanitizeStreamUrl(rawUrl: string, platform: WidgetPlatform): str
     }
 
     if (channel && channel.toLowerCase() !== 'embed' && channel.toLowerCase() !== 'popout') {
-      // Build the authorized Twitch embed chat URL with parent domains
+      const cleanChan = channel.replace(/^@/, '');
       const parents = Array.from(new Set([currentHost, 'samo2105.github.io', 'localhost', '127.0.0.1']));
       const parentParams = parents.map((p) => `parent=${encodeURIComponent(p)}`).join('&');
-      return `https://www.twitch.tv/embed/${encodeURIComponent(channel)}/chat?${parentParams}&darkpopout`;
+      return `https://www.twitch.tv/embed/${encodeURIComponent(cleanChan)}/chat?${parentParams}&darkpopout`;
     }
 
-    // If it's already an embed URL, ensure the currentHost is included in parent
     if (url.includes('/embed/') && !url.includes(`parent=${currentHost}`)) {
       const sep = url.includes('?') ? '&' : '?';
       return `${url}${sep}parent=${encodeURIComponent(currentHost)}&parent=samo2105.github.io`;
@@ -77,17 +108,24 @@ export function sanitizeStreamUrl(rawUrl: string, platform: WidgetPlatform): str
 
   // 2. KICK DEBUGGING & FORMATTING
   if (platform === 'kick' || url.includes('kick.com')) {
-    // If user provided raw channel URL e.g. https://kick.com/channel
-    const channelMatch = url.match(/kick\.com\/([a-zA-Z0-9_]+)\/?$/i);
+    // Check if user provided channel with or without @
+    const popoutMatch = url.match(/kick\.com\/popout\/@?([a-zA-Z0-9_]+)/i);
+    const channelMatch = url.match(/kick\.com\/@?([a-zA-Z0-9_]+)\/?$/i);
+
+    if (popoutMatch && popoutMatch[1]) {
+      const cleanChan = popoutMatch[1].replace(/^@/, '');
+      return `https://kick.com/popout/${encodeURIComponent(cleanChan)}/chat`;
+    }
+
     if (channelMatch && channelMatch[1] && !['popout', 'video', 'categories'].includes(channelMatch[1].toLowerCase())) {
-      return `https://kick.com/popout/${encodeURIComponent(channelMatch[1])}/chat`;
+      const cleanChan = channelMatch[1].replace(/^@/, '');
+      return `https://kick.com/popout/${encodeURIComponent(cleanChan)}/chat`;
     }
     return url;
   }
 
   // 3. YOUTUBE DEBUGGING & FORMATTING
   if (platform === 'youtube' || url.includes('youtube.com') || url.includes('youtu.be')) {
-    // Extract video ID if present
     let videoId = '';
     if (url.includes('v=')) {
       videoId = url.split('v=')[1]?.split('&')[0] || '';
