@@ -13,11 +13,13 @@ import { fetchAllViewerStats } from '../utils/viewers';
 interface ViewerBarProps {
   channels: ChannelsConfig;
   onUpdateChannels: (channels: ChannelsConfig) => void;
+  onOpenProfileModal?: () => void;
 }
 
 export const ViewerBar: React.FC<ViewerBarProps> = ({
   channels,
   onUpdateChannels,
+  onOpenProfileModal,
 }) => {
   const [stats, setStats] = useState<ViewerStats>({
     twitch: { channel: channels.twitch, viewers: 0, isLive: false, loading: true },
@@ -185,7 +187,13 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
             <>
               <button
                 type="button"
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+                  if (onOpenProfileModal) {
+                    onOpenProfileModal();
+                  } else {
+                    setIsEditing(true);
+                  }
+                }}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors text-[11px]"
                 title="Configurar nombres de canales para el conteo de viewers"
               >

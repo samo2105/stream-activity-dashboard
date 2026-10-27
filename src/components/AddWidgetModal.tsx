@@ -99,7 +99,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
     } else if (id.toLowerCase() === 'zannito' || id.toLowerCase() === '@zannito' || id.includes('zannito')) {
       id = 'SwjSwFWmxl0';
     }
-    const ytUrl = `https://www.youtube.com/live_chat?v=${id}&embed_domain=${currentHost}`;
+    const ytUrl = `https://www.youtube.com/live_chat?v=${id}&embed_domain=${currentHost}&dark_theme=1`;
     setUrl(ytUrl);
     if (!editingWidget || title.startsWith('YouTube')) {
       setTitle(id === 'SwjSwFWmxl0' ? 'YouTube Chat (@zannito - Warlock de Abismo)' : `YouTube Chat (${id})`);

@@ -26,6 +26,7 @@ export interface ChannelsConfig {
   twitch: string;
   kick: string;
   youtube: string;
+  youtubeHandle?: string;
 }
 
 export interface PlatformViewerData {

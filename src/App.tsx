@@ -5,6 +5,7 @@ import { WidgetGrid } from './components/WidgetGrid';
 import { AddWidgetModal } from './components/AddWidgetModal';
 import { PresetsModal } from './components/PresetsModal';
 import { SettingsModal } from './components/SettingsModal';
+import { ProfileModal } from './components/ProfileModal';
 import { DashboardConfig, WidgetItem, GridColumns, ChannelsConfig } from './types/widget';
 import { loadDashboardConfig, saveDashboardConfig, DEFAULT_CONFIG } from './utils/storage';
 import { ShieldCheck, Sparkles, Layers } from 'lucide-react';
@@ -14,6 +15,7 @@ export function App() {
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [isPresetsModalOpen, setIsPresetsModalOpen] = useState<boolean>(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [editingWidget, setEditingWidget] = useState<WidgetItem | null>(null);
 
   // Sync with localStorage on config changes
@@ -29,6 +31,53 @@ export function App() {
   // Handle Channels Change for Viewer Counter
   const handleUpdateChannels = (channels: ChannelsConfig) => {
     setConfig((prev) => ({ ...prev, channels }));
+  };
+
+  // Handle Save Channels from ProfileModal (with automatic widget updating)
+  const handleSaveChannels = (newChannels: ChannelsConfig, updateWidgets: boolean) => {
+    setConfig((prev) => {
+      let updatedWidgets = prev.widgets;
+      if (updateWidgets) {
+        const currentHost = typeof window !== 'undefined' ? (window.location.hostname || 'localhost') : 'localhost';
+        updatedWidgets = prev.widgets.map((w) => {
+          // Update YouTube live chat widget
+          if (w.platform === 'youtube' || w.url.includes('youtube.com/live_chat')) {
+            const ytId = newChannels.youtube.replace(/^@/, '');
+            const displayTitle = newChannels.youtubeHandle ? `@${newChannels.youtubeHandle.replace(/^@/, '')}` : ytId;
+            return {
+              ...w,
+              title: `YouTube Live Chat (${displayTitle})`,
+              url: `https://www.youtube.com/live_chat?v=${encodeURIComponent(ytId)}&embed_domain=${encodeURIComponent(currentHost)}&dark_theme=1`,
+            };
+          }
+          // Update Twitch widget
+          if ((w.platform === 'twitch' || w.url.includes('twitch.tv/embed')) && newChannels.twitch) {
+            const twitchUser = newChannels.twitch.replace(/^@/, '');
+            return {
+              ...w,
+              title: `Twitch Chat (${twitchUser})`,
+              url: `https://www.twitch.tv/embed/${encodeURIComponent(twitchUser)}/chat?parent=${encodeURIComponent(currentHost)}&parent=samo2105.github.io&darkpopout`,
+            };
+          }
+          // Update Kick widget
+          if ((w.platform === 'kick' || w.url.includes('kick.com/popout')) && newChannels.kick) {
+            const kickUser = newChannels.kick.replace(/^@/, '');
+            return {
+              ...w,
+              title: `Kick Chat (${kickUser})`,
+              url: `https://kick.com/popout/${encodeURIComponent(kickUser)}/chat`,
+            };
+          }
+          return w;
+        });
+      }
+
+      return {
+        ...prev,
+        channels: newChannels,
+        widgets: updatedWidgets,
+      };
+    });
   };
 
   // Handle Save (Add or Update Widget)
@@ -118,6 +167,8 @@ export function App() {
         onOpenAddModal={handleOpenAdd}
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
         onOpenPresetsModal={() => setIsPresetsModalOpen(true)}
+        onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        channels={config.channels}
         totalWidgets={config.widgets.length}
       />
 
@@ -125,6 +176,7 @@ export function App() {
       <ViewerBar
         channels={config.channels}
         onUpdateChannels={handleUpdateChannels}
+        onOpenProfileModal={() => setIsProfileModalOpen(true)}
       />
 
       {/* Main Stream Activity Grid */}
@@ -178,6 +230,14 @@ export function App() {
       </footer>
 
       {/* Modals */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        channels={config.channels}
+        onSaveChannels={handleSaveChannels}
+        widgets={config.widgets}
+      />
+
       <AddWidgetModal
         isOpen={isAddModalOpen}
         onClose={() => {

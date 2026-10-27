@@ -127,7 +127,7 @@ export const INITIAL_DEFAULT_WIDGETS: WidgetItem[] = [
     id: 'user-youtube-live-chat',
     title: 'YouTube Live Chat (@zannito)',
     platform: 'youtube',
-    url: 'https://www.youtube.com/live_chat?v=SwjSwFWmxl0&embed_domain=samo2105.github.io',
+    url: 'https://www.youtube.com/live_chat?v=SwjSwFWmxl0&embed_domain=samo2105.github.io&dark_theme=1',
     columnSpan: 1,
     createdAt: Date.now() - 2000,
   },

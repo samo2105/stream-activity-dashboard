@@ -9,7 +9,8 @@ import {
   ArrowLeftRight,
   AlertCircle,
   HelpCircle,
-  MessageSquare
+  MessageSquare,
+  SunMoon
 } from 'lucide-react';
 import { WidgetItem } from '../types/widget';
 import { PLATFORM_PRESETS } from '../utils/presets';
@@ -31,6 +32,7 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
   const [reloadKey, setReloadKey] = useState<number>(0);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [contrastMode, setContrastMode] = useState<'dark' | 'contrast' | 'light' | 'invert'>('dark');
 
   const preset = PLATFORM_PRESETS[widget.platform] || PLATFORM_PRESETS.custom;
   const isPlaceholder = widget.url === 'about:blank' || widget.url.includes('TU_TOKEN') || widget.url.includes('TU_CANAL');
@@ -47,6 +49,15 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
 
   const handleToggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
+  };
+
+  const handleToggleContrast = () => {
+    setContrastMode((prev) => {
+      if (prev === 'dark') return 'contrast';
+      if (prev === 'contrast') return 'light';
+      if (prev === 'light') return 'invert';
+      return 'dark';
+    });
   };
 
   return (
@@ -83,6 +94,28 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-1 shrink-0">
+          {/* Contrast Mode Toggle */}
+          <button
+            type="button"
+            onClick={handleToggleContrast}
+            className={`p-1.5 rounded text-xs transition-colors ${
+              contrastMode !== 'dark'
+                ? 'text-amber-400 bg-amber-400/15 border border-amber-400/30'
+                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
+            }`}
+            title={`Fondo/Contraste actual: ${
+              contrastMode === 'dark'
+                ? 'Oscuro (#09090b)'
+                : contrastMode === 'contrast'
+                ? 'Gris Pizarra (#18181b)'
+                : contrastMode === 'light'
+                ? 'Fondo Blanco (#ffffff)'
+                : 'Colores Invertidos'
+            }. Clic para alternar si no se leen los mensajes.`}
+          >
+            <SunMoon className="w-3.5 h-3.5" />
+          </button>
+
           {/* Span toggle (1 col vs 2 col) */}
           <button
             type="button"
@@ -187,7 +220,12 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
       )}
 
       {/* Card Body / Iframe Area */}
-      <div className="relative flex-1 bg-black/60 overflow-hidden flex flex-col items-center justify-center">
+      <div 
+        className={`relative flex-1 overflow-hidden flex flex-col items-center justify-center transition-colors duration-200 ${
+          contrastMode === 'light' ? 'bg-white' : contrastMode === 'contrast' ? 'bg-zinc-900' : 'bg-zinc-950'
+        }`} 
+        style={{ backgroundColor: contrastMode === 'light' ? '#ffffff' : contrastMode === 'contrast' ? '#18181b' : '#09090b' }}
+      >
         {isPlaceholder ? (
           /* Placeholder Guide Card */
           <div className="p-6 text-center max-w-sm flex flex-col items-center gap-3">
@@ -229,8 +267,14 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
               src={effectiveUrl}
               title={widget.title}
               onLoad={() => setIsLoading(false)}
-              className="w-full h-full border-0 bg-transparent"
+              className="w-full h-full border-0"
+              style={{
+                backgroundColor: contrastMode === 'light' ? '#ffffff' : contrastMode === 'contrast' ? '#18181b' : '#09090b',
+                colorScheme: contrastMode === 'light' ? 'light' : 'dark',
+                filter: contrastMode === 'invert' ? 'invert(1) hue-rotate(180deg)' : undefined,
+              }}
               allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen"
+              allowTransparency={true}
             />
           </>
         )}

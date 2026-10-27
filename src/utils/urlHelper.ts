@@ -128,7 +128,7 @@ export function sanitizeStreamUrl(rawUrl: string, platform: WidgetPlatform): str
   if (platform === 'youtube' || url.includes('youtube.com') || url.includes('youtu.be')) {
     // Check if channel is @zannito
     if (url.includes('@zannito') || url.includes('/zannito')) {
-      return `https://www.youtube.com/live_chat?v=SwjSwFWmxl0&embed_domain=${encodeURIComponent(currentHost)}`;
+      return `https://www.youtube.com/live_chat?v=SwjSwFWmxl0&embed_domain=${encodeURIComponent(currentHost)}&dark_theme=1`;
     }
 
     let videoId = '';
@@ -141,8 +141,21 @@ export function sanitizeStreamUrl(rawUrl: string, platform: WidgetPlatform): str
     }
 
     if (videoId) {
-      return `https://www.youtube.com/live_chat?v=${encodeURIComponent(videoId)}&embed_domain=${encodeURIComponent(currentHost)}`;
+      return `https://www.youtube.com/live_chat?v=${encodeURIComponent(videoId)}&embed_domain=${encodeURIComponent(currentHost)}&dark_theme=1`;
     }
+
+    // If it's already a live_chat URL, ensure embed_domain and dark_theme=1 are present
+    if (url.includes('/live_chat')) {
+      let finalUrl = url;
+      if (!finalUrl.includes('embed_domain=')) {
+        finalUrl += `${finalUrl.includes('?') ? '&' : '?'}embed_domain=${encodeURIComponent(currentHost)}`;
+      }
+      if (!finalUrl.includes('dark_theme=1')) {
+        finalUrl += '&dark_theme=1';
+      }
+      return finalUrl;
+    }
+
     return url;
   }
 

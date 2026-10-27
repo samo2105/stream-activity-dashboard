@@ -10,6 +10,7 @@ export const DEFAULT_CONFIG: DashboardConfig = {
     twitch: 'samo2105',
     kick: '',
     youtube: 'SwjSwFWmxl0',
+    youtubeHandle: 'zannito',
   },
   widgets: INITIAL_DEFAULT_WIDGETS,
 };
@@ -31,6 +32,7 @@ export function loadDashboardConfig(): DashboardConfig {
             twitch: parsedLegacy.channels?.twitch || 'samo2105',
             kick: parsedLegacy.channels?.kick || '',
             youtube: parsedLegacy.channels?.youtube || 'SwjSwFWmxl0',
+            youtubeHandle: parsedLegacy.channels?.youtubeHandle || 'zannito',
           },
           widgets: DEFAULT_CONFIG.widgets,
         };
@@ -45,6 +47,7 @@ export function loadDashboardConfig(): DashboardConfig {
         twitch: parsed.channels?.twitch ?? DEFAULT_CONFIG.channels.twitch,
         kick: parsed.channels?.kick ?? DEFAULT_CONFIG.channels.kick,
         youtube: parsed.channels?.youtube ?? DEFAULT_CONFIG.channels.youtube,
+        youtubeHandle: parsed.channels?.youtubeHandle ?? DEFAULT_CONFIG.channels.youtubeHandle,
       },
       widgets: Array.isArray(parsed.widgets) 
         ? parsed.widgets.map((w: WidgetItem) => {
@@ -58,6 +61,14 @@ export function loadDashboardConfig(): DashboardConfig {
                 ...w,
                 url: w.url.replace('/popout/', '/embed/').concat('&parent=samo2105.github.io'),
               };
+            }
+            // Automatically ensure YouTube live chat has dark_theme=1
+            if (w.url?.includes('youtube.com/live_chat')) {
+              let updatedUrl = w.url;
+              if (!updatedUrl.includes('dark_theme=1')) {
+                updatedUrl += `${updatedUrl.includes('?') ? '&' : '?'}dark_theme=1`;
+              }
+              return { ...w, url: updatedUrl };
             }
             return w;
           })
@@ -101,6 +112,7 @@ export function parseConfigFile(jsonString: string): DashboardConfig | null {
           twitch: data.channels?.twitch || '',
           kick: data.channels?.kick || '',
           youtube: data.channels?.youtube || '',
+          youtubeHandle: data.channels?.youtubeHandle || '',
         },
         widgets: data.widgets,
       };

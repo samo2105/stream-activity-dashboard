@@ -5,9 +5,10 @@ import {
   Settings, 
   Sparkles, 
   Github, 
-  Tv2
+  Tv2,
+  Radio
 } from 'lucide-react';
-import { GridColumns } from '../types/widget';
+import { GridColumns, ChannelsConfig } from '../types/widget';
 
 interface NavbarProps {
   columns: GridColumns;
@@ -15,6 +16,8 @@ interface NavbarProps {
   onOpenAddModal: () => void;
   onOpenSettingsModal: () => void;
   onOpenPresetsModal: () => void;
+  onOpenProfileModal: () => void;
+  channels: ChannelsConfig;
   totalWidgets: number;
 }
 
@@ -24,6 +27,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAddModal,
   onOpenSettingsModal,
   onOpenPresetsModal,
+  onOpenProfileModal,
+  channels,
   totalWidgets,
 }) => {
   return (
@@ -88,6 +93,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
+          {/* Configure Channels / Profile Button */}
+          <button
+            type="button"
+            onClick={onOpenProfileModal}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-purple-500/30 rounded-lg transition-all shadow-sm"
+            title="Configurar nombres de usuario y canales de stream"
+          >
+            <Radio className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden md:inline text-zinc-400 font-normal">Canal:</span>
+            <span className="text-purple-300 font-medium truncate max-w-[120px]">
+              {channels.youtubeHandle ? `@${channels.youtubeHandle.replace(/^@/, '')}` : channels.twitch || 'Mis Canales'}
+            </span>
+          </button>
+
           {/* Add Widget Button */}
           <button
             type="button"
