@@ -8,6 +8,7 @@ import {
   detectStreamDrops,
   pingServiceEndpoint,
   runFullHealthDiagnostics,
+  isWidgetStreamActive,
 } from '../src/utils/streamHealth.ts';
 
 test('HEALTH_SERVICES contains all 5 primary streaming endpoints', () => {
@@ -83,6 +84,39 @@ test('detectStreamDrops identifies unexpected stream disconnections', () => {
   const alertsKick = detectStreamDrops(previousStats, currentStatsKickDown);
   assert.equal(alertsKick.length, 1);
   assert.match(alertsKick[0], /Kick/i);
+});
+
+test('isWidgetStreamActive correctly evaluates stream connection status per platform', () => {
+  const offlineStats = {
+    twitch: { channel: 'samo2105', viewers: 0, isLive: false, loading: false },
+    kick: { channel: 'samo_kick', viewers: 0, isLive: false, loading: false },
+    youtube: { channel: 'SwjSwFWmxl0', viewers: 0, isLive: false, loading: false },
+    total: 0,
+  };
+
+  const twitchLiveStats = {
+    ...offlineStats,
+    twitch: { channel: 'samo2105', viewers: 100, isLive: true, loading: false },
+  };
+
+  // 1. When all are offline and OBS is inactive
+  assert.equal(isWidgetStreamActive('twitch', 'https://twitch.tv/embed/samo2105/chat', offlineStats, false), false);
+  assert.equal(isWidgetStreamActive('kick', 'https://kick.com/popout/samo/chat', offlineStats, false), false);
+  assert.equal(isWidgetStreamActive('youtube', 'https://youtube.com/live_chat?v=123', offlineStats, false), false);
+  assert.equal(isWidgetStreamActive('eventlist', 'https://streamlabs.com/widgets/event-list/v1/token', offlineStats, false), false);
+
+  // 2. When Twitch is live: Twitch widget and general widgets are active
+  assert.equal(isWidgetStreamActive('twitch', 'https://twitch.tv/embed/samo2105/chat', twitchLiveStats, false), true);
+  assert.equal(isWidgetStreamActive('eventlist', 'https://streamlabs.com/widgets/event-list/v1/token', twitchLiveStats, false), true);
+  assert.equal(isWidgetStreamActive('kick', 'https://kick.com/popout/samo/chat', twitchLiveStats, false), false);
+
+  // 3. When OBS is actively streaming: all widgets are active regardless of platform
+  assert.equal(isWidgetStreamActive('twitch', 'https://twitch.tv/embed/samo2105/chat', offlineStats, true), true);
+  assert.equal(isWidgetStreamActive('kick', 'https://kick.com/popout/samo/chat', offlineStats, true), true);
+  assert.equal(isWidgetStreamActive('eventlist', 'https://streamlabs.com/widgets/event-list/v1/token', offlineStats, true), true);
+
+  // 4. When stats are null
+  assert.equal(isWidgetStreamActive('twitch', 'https://twitch.tv/embed/samo2105/chat', null, false), false);
 });
 
 test('pingServiceEndpoint handles timeout / unreachable endpoints gracefully', async () => {

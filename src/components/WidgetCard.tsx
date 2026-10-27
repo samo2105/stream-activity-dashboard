@@ -12,7 +12,9 @@ import {
   MessageSquare,
   Monitor,
   Moon,
-  Sun
+  Sun,
+  Play,
+  WifiOff
 } from 'lucide-react';
 import { WidgetItem, ThemeMode } from '../types/widget';
 import { PLATFORM_PRESETS } from '../utils/presets';
@@ -22,6 +24,7 @@ interface WidgetCardProps {
   widget: WidgetItem;
   dashboardTheme?: ThemeMode;
   dashboardFontScale?: number;
+  isStreamActive?: boolean;
   onDelete: (id: string) => void;
   onEdit: (widget: WidgetItem) => void;
   onToggleSpan: (id: string) => void;
@@ -35,6 +38,7 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
   widget,
   dashboardTheme,
   dashboardFontScale,
+  isStreamActive = false,
   onDelete,
   onEdit,
   onToggleSpan,
@@ -44,6 +48,7 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
   const [reloadKey, setReloadKey] = useState<number>(0);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [forcePreview, setForcePreview] = useState<boolean>(false);
 
   // Active theme mode: 'normal' (default), 'dark' (high contrast OLED), or 'light' (clean white)
   const currentTheme: ThemeMode = widget.themeMode || (widget.highContrast ? 'dark' : (dashboardTheme || 'normal'));
@@ -150,16 +155,30 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
             {preset.badgeText}
           </span>
 
-          {/* Title */}
-          <h2
-            className={`text-xs font-semibold truncate cursor-pointer transition-colors ${
-              isLight ? 'text-zinc-800 hover:text-black' : 'text-zinc-200 hover:text-white'
-            }`}
-            onClick={() => onEdit(widget)}
-            title="Haz clic para editar título o URL"
-          >
-            {widget.title}
-          </h2>
+          {/* Title and Connection Status */}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <h2
+              className={`text-xs font-semibold truncate cursor-pointer transition-colors ${
+                isLight ? 'text-zinc-800 hover:text-black' : 'text-zinc-200 hover:text-white'
+              }`}
+              onClick={() => onEdit(widget)}
+              title="Haz clic para editar título o URL"
+            >
+              {widget.title}
+            </h2>
+            {!isPlaceholder && (
+              isStreamActive ? (
+                <span className="text-[10px] text-emerald-400 font-semibold px-1.5 py-0.2 rounded bg-emerald-500/10 border border-emerald-500/30 shrink-0 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  en vivo
+                </span>
+              ) : (
+                <span className="text-[10px] text-zinc-400 font-normal px-1.5 py-0.2 rounded bg-zinc-800/80 border border-zinc-700/60 shrink-0">
+                  (no conectado)
+                </span>
+              )
+            )}
+          </div>
         </div>
 
         {/* Action Controls */}
@@ -398,6 +417,42 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
               Pegar URL del Widget
             </button>
           </div>
+        ) : !isStreamActive && !forcePreview ? (
+          /* Standby Screen: Stream is offline, no iframe pull */
+          <div className="p-6 text-center max-w-sm flex flex-col items-center gap-3 animate-fadeIn">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all ${
+              isLight 
+                ? 'bg-zinc-100 border-zinc-200 text-zinc-400' 
+                : isDark 
+                ? 'bg-zinc-900/60 border-zinc-800 text-zinc-500' 
+                : 'bg-zinc-900 border-zinc-800 text-zinc-500'
+            }`}>
+              <WifiOff className="w-6 h-6 opacity-60" />
+            </div>
+
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-800/80 border border-zinc-700/80 text-zinc-400 mb-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+                <span>(no conectado)</span>
+              </div>
+              <h3 className={`text-sm font-semibold ${isLight ? 'text-zinc-800' : 'text-zinc-200'}`}>
+                Stream Inactivo
+              </h3>
+              <p className={`text-xs mt-1 leading-relaxed ${isLight ? 'text-zinc-600' : 'text-zinc-400'}`}>
+                El widget se cargará automáticamente al detectar una conexión de stream activa.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setForcePreview(true)}
+              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700 shadow-sm transition-all"
+              title="Cargar el widget ahora para probarlo o previsualizarlo"
+            >
+              <Play className="w-3.5 h-3.5 text-purple-400 fill-current" />
+              <span>Cargar de todos modos (Vista previa)</span>
+            </button>
+          </div>
         ) : (
           /* Real Iframe View with Unrestricted Stream Capabilities */
           <>
@@ -441,13 +496,31 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
           ? 'bg-black border-zinc-800 text-zinc-400' 
           : 'bg-zinc-950/60 border-zinc-800/60 text-zinc-500'
       }`}>
-        <span className="truncate max-w-[280px]" title={effectiveUrl}>
+        <span className="truncate max-w-[260px]" title={effectiveUrl}>
           {isPlaceholder ? 'Pendiente de configurar URL' : effectiveUrl.replace(/^https?:\/\//, '')}
         </span>
-        <span className={`flex items-center gap-1 text-[10px] ${isLight ? 'text-zinc-600' : 'text-zinc-400'}`}>
-          <AlertCircle className="w-3 h-3 text-emerald-500" />
-          Fuente Web Activa
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          {forcePreview && !isStreamActive && (
+            <button
+              type="button"
+              onClick={() => setForcePreview(false)}
+              className="text-[10px] text-amber-400 hover:underline cursor-pointer"
+              title="Volver al modo en espera (no conectado)"
+            >
+              Pausar vista previa
+            </button>
+          )}
+          <span className={`flex items-center gap-1 text-[10px] ${
+            !isStreamActive && !forcePreview 
+              ? 'text-zinc-500' 
+              : isStreamActive 
+              ? 'text-emerald-400 font-medium' 
+              : 'text-amber-400'
+          }`}>
+            <AlertCircle className={`w-3 h-3 ${!isStreamActive && !forcePreview ? 'text-zinc-500' : isStreamActive ? 'text-emerald-500' : 'text-amber-500'}`} />
+            {!isStreamActive && !forcePreview ? 'En espera (no conectado)' : isStreamActive ? 'En vivo' : 'Vista previa'}
+          </span>
+        </div>
       </div>
     </div>
   );

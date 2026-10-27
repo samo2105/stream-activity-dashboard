@@ -6,10 +6,10 @@ import { AddWidgetModal } from './components/AddWidgetModal';
 import { PresetsModal } from './components/PresetsModal';
 import { SettingsModal } from './components/SettingsModal';
 import { ProfileModal } from './components/ProfileModal';
-import { DashboardConfig, WidgetItem, GridColumns, ChannelsConfig, ThemeMode, CounterSize } from './types/widget';
+import { DashboardConfig, WidgetItem, GridColumns, ChannelsConfig, ThemeMode, CounterSize, ViewerStats } from './types/widget';
 import { StreamHealthSummary } from './types/streamHealth';
 import { loadDashboardConfig, saveDashboardConfig, DEFAULT_CONFIG } from './utils/storage';
-import { runFullHealthDiagnostics } from './utils/streamHealth';
+import { runFullHealthDiagnostics, detectStreamDrops } from './utils/streamHealth';
 import { StreamHealthModal } from './components/StreamHealthModal';
 import { ObsModal } from './components/ObsModal';
 import type { ObsConfig, ObsConnectionStatus, ObsStreamStats } from './types/obs';
@@ -26,6 +26,7 @@ export function App() {
   const [isObsModalOpen, setIsObsModalOpen] = useState<boolean>(false);
   const [healthSummary, setHealthSummary] = useState<StreamHealthSummary | null>(null);
   const [streamAlerts, setStreamAlerts] = useState<string[]>([]);
+  const [viewerStats, setViewerStats] = useState<ViewerStats | null>(null);
   const [obsStatus, setObsStatus] = useState<ObsConnectionStatus>('disconnected');
   const [obsStats, setObsStats] = useState<ObsStreamStats>(INITIAL_OBS_STATS);
   const [obsErrorMsg, setObsErrorMsg] = useState<string | undefined>();
@@ -208,17 +209,31 @@ export function App() {
     setConfig((prev) => ({ ...prev, counterSize }));
   };
 
-  // Run Real-Time Stream Health & Network Diagnostics
+  // Run Real-Time Stream Health & Network Diagnostics (Ping measurement only, no drops by ping)
   const handleRefreshHealth = async () => {
     try {
       const summary = await runFullHealthDiagnostics();
       setHealthSummary(summary);
-      if (summary.overallRating === 'poor' || summary.overallRating === 'offline') {
-        setStreamAlerts((prev) => Array.from(new Set([...prev, summary.recommendation])));
+      // Only report loss of signal if there is 100% network disconnection (offline)
+      if (summary.overallRating === 'offline') {
+        setStreamAlerts((prev) => Array.from(new Set([...prev, 'Pérdida de señal de internet.'])));
       }
     } catch (err) {
       console.error('Error al ejecutar diagnósticos de red:', err);
     }
+  };
+
+  // Handle live viewer stats update and detect true stream disconnects (online -> offline)
+  const handleViewerStatsUpdate = (newStats: ViewerStats) => {
+    setViewerStats((prev) => {
+      if (prev) {
+        const drops = detectStreamDrops(prev, newStats);
+        if (drops.length > 0) {
+          setStreamAlerts((currentAlerts) => Array.from(new Set([...currentAlerts, ...drops])));
+        }
+      }
+      return newStats;
+    });
   };
 
   useEffect(() => {
@@ -346,6 +361,7 @@ export function App() {
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
         onOpenHealthModal={() => setIsHealthModalOpen(true)}
         onOpenObsModal={() => setIsObsModalOpen(true)}
+        onStatsUpdate={handleViewerStatsUpdate}
       />
 
       {/* Main Stream Activity Grid */}
@@ -355,6 +371,8 @@ export function App() {
           columns={config.columns}
           dashboardTheme={currentThemeMode}
           dashboardFontScale={config.globalFontScale || 1.0}
+          viewerStats={viewerStats}
+          obsStreamingActive={obsStats.outputActive}
           onDeleteWidget={handleDeleteWidget}
           onEditWidget={handleEditWidget}
           onToggleSpan={handleToggleSpan}

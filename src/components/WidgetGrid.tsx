@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plus, Sparkles, LayoutGrid } from 'lucide-react';
-import { WidgetItem, GridColumns, ThemeMode } from '../types/widget';
+import { WidgetItem, GridColumns, ThemeMode, ViewerStats } from '../types/widget';
+import { isWidgetStreamActive } from '../utils/streamHealth';
 import { WidgetCard } from './WidgetCard';
 
 interface WidgetGridProps {
@@ -8,6 +9,8 @@ interface WidgetGridProps {
   columns: GridColumns;
   dashboardTheme?: ThemeMode;
   dashboardFontScale?: number;
+  viewerStats?: ViewerStats | null;
+  obsStreamingActive?: boolean;
   onDeleteWidget: (id: string) => void;
   onEditWidget: (widget: WidgetItem) => void;
   onToggleSpan: (id: string) => void;
@@ -22,6 +25,8 @@ export const WidgetGrid: React.FC<WidgetGridProps> = ({
   columns,
   dashboardTheme,
   dashboardFontScale,
+  viewerStats,
+  obsStreamingActive,
   onDeleteWidget,
   onEditWidget,
   onToggleSpan,
@@ -81,19 +86,28 @@ export const WidgetGrid: React.FC<WidgetGridProps> = ({
 
   return (
     <div className={`grid gap-4 ${getGridColsClass()}`}>
-      {widgets.map((widget) => (
-        <WidgetCard
-          key={widget.id}
-          widget={widget}
-          dashboardTheme={dashboardTheme}
-          dashboardFontScale={dashboardFontScale}
-          onDelete={onDeleteWidget}
-          onEdit={onEditWidget}
-          onToggleSpan={onToggleSpan}
-          onCycleTheme={onCycleTheme}
-          onUpdateFontScale={onUpdateFontScale}
-        />
-      ))}
+      {widgets.map((widget) => {
+        const isLive = isWidgetStreamActive(
+          widget.platform,
+          widget.url,
+          viewerStats,
+          obsStreamingActive
+        );
+        return (
+          <WidgetCard
+            key={widget.id}
+            widget={widget}
+            dashboardTheme={dashboardTheme}
+            dashboardFontScale={dashboardFontScale}
+            isStreamActive={isLive}
+            onDelete={onDeleteWidget}
+            onEdit={onEditWidget}
+            onToggleSpan={onToggleSpan}
+            onCycleTheme={onCycleTheme}
+            onUpdateFontScale={onUpdateFontScale}
+          />
+        );
+      })}
     </div>
   );
 };

@@ -28,6 +28,7 @@ interface ViewerBarProps {
   onOpenProfileModal?: () => void;
   onOpenHealthModal?: () => void;
   onOpenObsModal?: () => void;
+  onStatsUpdate?: (stats: ViewerStats) => void;
 }
 
 const REFRESH_INTERVAL_SECONDS = 15;
@@ -119,6 +120,7 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
   onOpenProfileModal,
   onOpenHealthModal,
   onOpenObsModal,
+  onStatsUpdate,
 }) => {
   const [stats, setStats] = useState<ViewerStats>({
     twitch: { channel: channels.twitch, viewers: 0, isLive: false, loading: true },
@@ -141,6 +143,9 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
     try {
       const newStats = await fetchAllViewerStats(channelsRef.current);
       setStats(newStats);
+      if (onStatsUpdate) {
+        onStatsUpdate(newStats);
+      }
       const now = new Date();
       setLastUpdatedTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (e) {
@@ -149,7 +154,7 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
       setIsRefreshing(false);
       setCountdown(REFRESH_INTERVAL_SECONDS);
     }
-  }, []);
+  }, [onStatsUpdate]);
 
   // Run on mount or when channels change
   useEffect(() => {
@@ -298,18 +303,12 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
             title="Diagnóstico de red y salud del stream (haz clic para ver el test completo de todos los servicios)"
           >
             <span className={`w-2 h-2 rounded-full ${
-              healthSummary?.overallRating === 'excellent' ? 'bg-emerald-400' :
-              healthSummary?.overallRating === 'good' ? 'bg-teal-400' :
-              healthSummary?.overallRating === 'fair' ? 'bg-amber-400' : 'bg-rose-400'
+              (healthSummary?.averageLatencyMs || 0) < 100 ? 'bg-emerald-400' :
+              (healthSummary?.averageLatencyMs || 0) < 250 ? 'bg-amber-400' : 'bg-rose-400'
             } animate-pulse shrink-0`} />
             <Activity className="w-3.5 h-3.5 shrink-0" />
             <span className="font-bold text-[11px]">
-              {healthSummary ? `${healthSummary.averageLatencyMs} ms` : 'Red'}
-            </span>
-            <span className="text-[10px] hidden sm:inline opacity-80">
-              ({healthSummary?.overallRating === 'excellent' ? 'Excelente' :
-                healthSummary?.overallRating === 'good' ? 'Buena' :
-                healthSummary?.overallRating === 'fair' ? 'Fluctuante' : 'Deficiente'})
+              {healthSummary ? `Ping: ${healthSummary.averageLatencyMs} ms` : 'Ping'}
             </span>
           </button>
 

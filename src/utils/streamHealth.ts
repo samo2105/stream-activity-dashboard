@@ -213,3 +213,45 @@ export function detectStreamDrops(
 
   return alerts;
 }
+
+/**
+ * Determines whether a widget's streaming connection is currently active based on live channel status and OBS.
+ */
+export function isWidgetStreamActive(
+  widgetPlatform: string,
+  widgetUrl: string,
+  viewerStats?: ViewerStats | null,
+  obsStreamingActive?: boolean
+): boolean {
+  // If OBS is actively streaming, all widgets are considered active
+  if (obsStreamingActive) {
+    return true;
+  }
+
+  if (!viewerStats) {
+    return false;
+  }
+
+  // Twitch chat / stream
+  if (widgetPlatform === 'twitch' || widgetUrl.includes('twitch.tv')) {
+    return !!viewerStats.twitch?.isLive;
+  }
+
+  // Kick chat / stream
+  if (widgetPlatform === 'kick' || widgetUrl.includes('kick.com')) {
+    return !!viewerStats.kick?.isLive;
+  }
+
+  // YouTube live chat / stream
+  if (widgetPlatform === 'youtube' || widgetUrl.includes('youtube.com')) {
+    return !!viewerStats.youtube?.isLive;
+  }
+
+  // General widgets (Event List, Chat Box, Streamlabs, StreamElements, Botrix, TikTok, Custom)
+  // Active if ANY configured channel is live
+  return (
+    !!viewerStats.twitch?.isLive ||
+    !!viewerStats.kick?.isLive ||
+    !!viewerStats.youtube?.isLive
+  );
+}
