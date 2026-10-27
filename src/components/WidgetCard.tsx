@@ -8,7 +8,8 @@ import {
   Edit3, 
   ArrowLeftRight,
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  MessageSquare
 } from 'lucide-react';
 import { WidgetItem } from '../types/widget';
 import { PLATFORM_PRESETS } from '../utils/presets';
@@ -32,6 +33,7 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
 
   const preset = PLATFORM_PRESETS[widget.platform] || PLATFORM_PRESETS.custom;
   const isPlaceholder = widget.url === 'about:blank' || widget.url.includes('TU_TOKEN') || widget.url.includes('TU_CANAL');
+  const isTwitch = widget.platform === 'twitch' || widget.url.includes('twitch.tv');
 
   const handleReload = () => {
     setIsLoading(true);
@@ -149,17 +151,39 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
         </div>
       </div>
 
+      {/* Twitch Connection Refused Hint if needed */}
+      {isTwitch && (
+        <div className="bg-purple-950/40 border-b border-purple-500/20 px-3 py-1 flex items-center justify-between text-[11px] text-purple-300">
+          <span className="truncate">
+            ¿Twitch rechazó la conexión? Requiere parent coincidente o usa una <strong>Chat Box URL</strong>.
+          </span>
+          <a
+            href={widget.url.replace('/embed/', '/popout/')}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 ml-2 inline-flex items-center gap-1 text-[10px] bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 px-1.5 py-0.5 rounded transition-colors"
+          >
+            <ExternalLink className="w-2.5 h-2.5" />
+            Abrir Popout
+          </a>
+        </div>
+      )}
+
       {/* Card Body / Iframe Area */}
       <div className="relative flex-1 bg-black/60 overflow-hidden flex flex-col items-center justify-center">
         {isPlaceholder ? (
           /* Placeholder Guide Card */
           <div className="p-6 text-center max-w-sm flex flex-col items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-              <HelpCircle className="w-6 h-6" />
+              {widget.platform === 'chatbox' ? (
+                <MessageSquare className="w-6 h-6" />
+              ) : (
+                <HelpCircle className="w-6 h-6" />
+              )}
             </div>
             <div>
               <h3 className="text-sm font-semibold text-zinc-200">
-                Configura tu widget de {preset.badgeText}
+                Configura tu URL de {preset.badgeText}
               </h3>
               <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
                 {preset.guideText}
@@ -171,7 +195,7 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
               className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-600 hover:bg-purple-500 text-white shadow transition-colors"
             >
               <Edit3 className="w-3.5 h-3.5" />
-              Ingresar URL de Eventos
+              Pegar URL del Widget
             </button>
           </div>
         ) : (

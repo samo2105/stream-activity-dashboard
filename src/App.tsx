@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
+import { ViewerBar } from './components/ViewerBar';
 import { WidgetGrid } from './components/WidgetGrid';
 import { AddWidgetModal } from './components/AddWidgetModal';
 import { PresetsModal } from './components/PresetsModal';
 import { SettingsModal } from './components/SettingsModal';
-import { DashboardConfig, WidgetItem, GridColumns } from './types/widget';
+import { DashboardConfig, WidgetItem, GridColumns, ChannelsConfig } from './types/widget';
 import { loadDashboardConfig, saveDashboardConfig, DEFAULT_CONFIG } from './utils/storage';
 import { ShieldCheck, Sparkles, Layers } from 'lucide-react';
 
@@ -25,7 +26,12 @@ export function App() {
     setConfig((prev) => ({ ...prev, columns }));
   };
 
-  // Handle Save (Add or Update)
+  // Handle Channels Change for Viewer Counter
+  const handleUpdateChannels = (channels: ChannelsConfig) => {
+    setConfig((prev) => ({ ...prev, channels }));
+  };
+
+  // Handle Save (Add or Update Widget)
   const handleSaveWidget = (
     widgetData: Omit<WidgetItem, 'id' | 'createdAt'>,
     existingId?: string
@@ -54,7 +60,7 @@ export function App() {
     }
   };
 
-  // Handle Delete
+  // Handle Delete Widget
   const handleDeleteWidget = (id: string) => {
     setConfig((prev) => ({
       ...prev,
@@ -86,11 +92,11 @@ export function App() {
 
   // Handle Preset Apply
   const handleApplyPreset = (widgets: WidgetItem[], columns: GridColumns) => {
-    setConfig({
+    setConfig((prev) => ({
+      ...prev,
       columns,
-      autoRefreshInterval: 0,
       widgets,
-    });
+    }));
   };
 
   // Reset to default
@@ -115,7 +121,13 @@ export function App() {
         totalWidgets={config.widgets.length}
       />
 
-      {/* Main Stream Activity Area */}
+      {/* Live Viewers Bar */}
+      <ViewerBar
+        channels={config.channels}
+        onUpdateChannels={handleUpdateChannels}
+      />
+
+      {/* Main Stream Activity Grid */}
       <main className="flex-1 max-w-[1920px] w-full mx-auto p-4 sm:p-5">
         <WidgetGrid
           widgets={config.widgets}

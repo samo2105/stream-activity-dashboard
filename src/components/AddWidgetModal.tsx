@@ -4,7 +4,8 @@ import {
   Plus, 
   Save, 
   HelpCircle, 
-  Sparkles
+  Sparkles,
+  Info
 } from 'lucide-react';
 import { WidgetItem, WidgetPlatform } from '../types/widget';
 import { PLATFORM_PRESETS } from '../utils/presets';
@@ -22,12 +23,12 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   onSave,
   editingWidget,
 }) => {
-  const [platform, setPlatform] = useState<WidgetPlatform>('streamlabs');
+  const [platform, setPlatform] = useState<WidgetPlatform>('eventlist');
   const [title, setTitle] = useState<string>('');
   const [url, setUrl] = useState<string>('');
   const [columnSpan, setColumnSpan] = useState<1 | 2>(1);
 
-  // Quick inputs for specific platforms
+  // Quick helper inputs for specific platforms
   const [channelName, setChannelName] = useState<string>('');
   const [youtubeVideoId, setYoutubeVideoId] = useState<string>('');
 
@@ -50,6 +51,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   if (!isOpen) return null;
 
   const currentPreset = PLATFORM_PRESETS[platform];
+  const currentHost = window.location.hostname || 'localhost';
 
   const handlePlatformChange = (newPlatform: WidgetPlatform) => {
     setPlatform(newPlatform);
@@ -64,9 +66,9 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
     setChannelName(user);
     if (!user.trim()) return;
     const cleanUser = user.trim().toLowerCase();
-    const currentHost = window.location.hostname || 'localhost';
-    const twitchUrl = `https://www.twitch.tv/popout/${cleanUser}/chat?darkpopout&parent=${currentHost}&parent=samo2105.github.io`;
-    setUrl(twitchUrl);
+    // Twitch embed format requires parent parameter to allow iframe rendering
+    const twitchEmbedUrl = `https://www.twitch.tv/embed/${cleanUser}/chat?parent=${currentHost}&parent=samo2105.github.io&darkpopout`;
+    setUrl(twitchEmbedUrl);
     if (!editingWidget || title.startsWith('Twitch')) {
       setTitle(`Twitch Chat (${cleanUser})`);
     }
@@ -93,7 +95,6 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
     } else if (id.includes('live/')) {
       id = id.split('live/')[1]?.split('?')[0] || id;
     }
-    const currentHost = window.location.hostname || 'localhost';
     const ytUrl = `https://www.youtube.com/live_chat?v=${id}&embed_domain=${currentHost}`;
     setUrl(ytUrl);
     if (!editingWidget || title.startsWith('YouTube')) {
@@ -128,10 +129,10 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-white">
-                {editingWidget ? 'Editar Widget de Stream' : 'Añadir Nuevo Widget de Eventos'}
+                {editingWidget ? 'Editar Widget de Stream' : 'Añadir Widget de Eventos / Chat'}
               </h2>
               <p className="text-xs text-zinc-400">
-                Incrusta la actividad web de tu plataforma preferida
+                Pega la URL de tu Event List, Chat Box o selecciona una plantilla
               </p>
             </div>
           </div>
@@ -146,10 +147,10 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
-          {/* Platform Selector Grid */}
+          {/* Main Category / Platform Selector */}
           <div>
             <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
-              Plataforma o Fuente
+              Tipo de Fuente o Widget
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {(Object.keys(PLATFORM_PRESETS) as WidgetPlatform[]).map((pKey) => {
@@ -173,12 +174,27 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
             </div>
           </div>
 
-          {/* Platform Quick Generator Helper */}
+          {/* Quick Notice for Event List & Chat Box */}
+          {(platform === 'eventlist' || platform === 'chatbox') && (
+            <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-purple-300">
+                <Info className="w-4 h-4 text-purple-400 shrink-0" />
+                <span>{platform === 'eventlist' ? 'URL de Event List' : 'URL de Chat Box'}</span>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                {platform === 'eventlist'
+                  ? 'Puedes usar la URL de la fuente de navegador de Streamlabs Event List, StreamElements Activity Feed, o cualquier lista de eventos en vivo.'
+                  : 'Puedes pegar la URL del widget de Chat Box de Streamlabs, StreamElements o BotRix (que unifica chats de Twitch, Kick y YouTube sin problemas de login).'}
+              </p>
+            </div>
+          )}
+
+          {/* Platform Quick Generator Helper for Twitch */}
           {platform === 'twitch' && (
             <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2">
               <label className="text-xs font-medium text-purple-300 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />
-                Generador Rápido de Chat de Twitch:
+                Generador de Embed Oficial de Twitch:
               </label>
               <div className="flex gap-2">
                 <input
@@ -189,6 +205,9 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
                   className="flex-1 px-3 py-1.5 text-xs bg-zinc-950 border border-purple-500/30 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-purple-400"
                 />
               </div>
+              <p className="text-[11px] text-zinc-400">
+                ⚠️ Twitch requiere el parámetro <code>parent={currentHost}</code> para autorizar el iframe. Si tu navegador bloquea cookies de terceros en Twitch, te recomendamos usar la opción <strong>Chat Box</strong> de Streamlabs o BotRix.
+              </p>
             </div>
           )}
 
@@ -248,7 +267,7 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ej. Twitch Chat / Streamlabs Lista de Eventos"
+              placeholder="Ej. Lista de Eventos / Chat Box"
               className="w-full px-3.5 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
             />
           </div>

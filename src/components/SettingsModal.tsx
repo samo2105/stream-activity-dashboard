@@ -5,9 +5,10 @@ import {
   Upload, 
   RotateCcw, 
   ShieldCheck, 
-  Check 
+  Check,
+  Tv2
 } from 'lucide-react';
-import { DashboardConfig } from '../types/widget';
+import { DashboardConfig, ChannelsConfig } from '../types/widget';
 import { exportConfigToFile, parseConfigFile } from '../utils/storage';
 
 interface SettingsModalProps {
@@ -27,6 +28,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [channels, setChannels] = useState<ChannelsConfig>(config.channels || { twitch: '', kick: '', youtube: '' });
 
   if (!isOpen) return null;
 
@@ -45,6 +47,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const parsed = parseConfigFile(content);
       if (parsed) {
         onUpdateConfig(parsed);
+        setChannels(parsed.channels);
         setStatusMsg('Configuración importada y aplicada exitosamente.');
       } else {
         alert('El archivo JSON seleccionado no tiene un formato válido para StreamPulse.');
@@ -52,6 +55,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     };
     reader.readAsText(file);
     e.target.value = '';
+  };
+
+  const handleSaveChannels = () => {
+    onUpdateConfig({
+      ...config,
+      channels,
+    });
+    setStatusMsg('Canales para el conteo de viewers guardados.');
   };
 
   const handleReset = () => {
@@ -68,7 +79,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950/60">
           <div>
             <h2 className="text-base font-bold text-white">Configuración del Panel</h2>
-            <p className="text-xs text-zinc-400">Respaldo, privacidad y gestión de datos</p>
+            <p className="text-xs text-zinc-400">Canales de viewers, respaldo y privacidad</p>
           </div>
           <button
             type="button"
@@ -88,6 +99,66 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
+          {/* Channels Configuration for Viewer Counter */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Tv2 className="w-4 h-4 text-purple-400" />
+              Canales para Conteo de Viewers
+            </h3>
+            <p className="text-xs text-zinc-400">
+              Ingresa los nombres de tus canales para mostrar los espectadores en vivo de cada plataforma en la barra superior.
+            </p>
+
+            <div className="space-y-2.5 pt-1">
+              <div>
+                <label className="block text-[11px] font-medium text-purple-300 mb-1">
+                  Usuario de Twitch:
+                </label>
+                <input
+                  type="text"
+                  placeholder="ej. samo2105"
+                  value={channels.twitch}
+                  onChange={(e) => setChannels({ ...channels, twitch: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-green-300 mb-1">
+                  Usuario de Kick:
+                </label>
+                <input
+                  type="text"
+                  placeholder="ej. samo2105"
+                  value={channels.kick}
+                  onChange={(e) => setChannels({ ...channels, kick: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-red-300 mb-1">
+                  ID de Video o Stream de YouTube:
+                </label>
+                <input
+                  type="text"
+                  placeholder="ej. dQw4w9WgXcQ"
+                  value={channels.youtube}
+                  onChange={(e) => setChannels({ ...channels, youtube: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSaveChannels}
+                className="mt-1 w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold transition-colors"
+              >
+                Guardar Canales
+              </button>
+            </div>
+          </div>
+
           {/* Privacy & Security Card */}
           <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2">
             <div className="flex items-center gap-2 text-purple-300 font-semibold text-xs">
@@ -95,9 +166,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <span>Privacidad Total y Seguridad de Tokens</span>
             </div>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Tus URLs de eventos, tokens privados de Streamlabs/StreamElements y ajustes se guardan 
+              Tus URLs de eventos, tokens privados de Streamlabs/StreamElements y canales se guardan 
               <strong> únicamente en el almacenamiento local de este navegador (LocalStorage)</strong>. 
-              Ningún token ni secreto se envía a servidores externos ni a GitHub.
+              Ningún secreto se envía a servidores externos ni a GitHub.
             </p>
           </div>
 
@@ -107,7 +178,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               Copia de Seguridad y Restauración
             </h3>
             <p className="text-xs text-zinc-400">
-              Exporta tu lista de widgets para usarla en otro navegador, computadora de stream, o para no perder tus URLs.
+              Exporta tu lista de widgets y canales para usarla en otro navegador o PC de stream.
             </p>
 
             <div className="grid grid-cols-2 gap-3 pt-1">
