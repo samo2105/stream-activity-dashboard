@@ -1,14 +1,14 @@
 import { DashboardConfig, WidgetItem } from '../types/widget';
 import { INITIAL_DEFAULT_WIDGETS } from './presets';
 
-const STORAGE_KEY = 'streampulse_dashboard_config_v2';
+const STORAGE_KEY = 'streampulse_dashboard_config_v3';
 
 export const DEFAULT_CONFIG: DashboardConfig = {
   columns: 3,
   autoRefreshInterval: 0,
   channels: {
     twitch: 'samo2105',
-    kick: 'samo2105',
+    kick: '',
     youtube: '',
   },
   widgets: INITIAL_DEFAULT_WIDGETS,
@@ -18,15 +18,29 @@ export function loadDashboardConfig(): DashboardConfig {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      // Check legacy v1 key if migrating
-      const legacy = localStorage.getItem('streampulse_dashboard_config_v1');
+      // Check legacy v1 or v2 keys to migrate
+      const legacy = localStorage.getItem('streampulse_dashboard_config_v2') || localStorage.getItem('streampulse_dashboard_config_v1');
       if (legacy) {
         const parsedLegacy = JSON.parse(legacy);
         return {
           columns: parsedLegacy.columns || 3,
           autoRefreshInterval: parsedLegacy.autoRefreshInterval || 0,
-          channels: DEFAULT_CONFIG.channels,
-          widgets: Array.isArray(parsedLegacy.widgets) ? parsedLegacy.widgets : DEFAULT_CONFIG.widgets,
+          channels: {
+            twitch: parsedLegacy.channels?.twitch || 'samo2105',
+            kick: parsedLegacy.channels?.kick || '',
+            youtube: parsedLegacy.channels?.youtube || '',
+          },
+          widgets: Array.isArray(parsedLegacy.widgets)
+            ? parsedLegacy.widgets.map((w: WidgetItem) => {
+                if (w.url?.includes('kick.com/popout/samo2105/chat')) {
+                  return { ...w, url: 'about:blank' };
+                }
+                if (w.platform === 'chatbox' && (w.url === 'about:blank' || !w.url)) {
+                  return { ...w, url: DEFAULT_CONFIG.widgets[0].url };
+                }
+                return w;
+              })
+            : DEFAULT_CONFIG.widgets,
         };
       }
       return DEFAULT_CONFIG;
@@ -41,13 +55,20 @@ export function loadDashboardConfig(): DashboardConfig {
         youtube: parsed.channels?.youtube ?? DEFAULT_CONFIG.channels.youtube,
       },
       widgets: Array.isArray(parsed.widgets) 
-        ? parsed.widgets.map((w: WidgetItem) => ({
-            ...w,
+        ? parsed.widgets.map((w: WidgetItem) => {
+            // Fix broken 404 kick demo
+            if (w.url?.includes('kick.com/popout/samo2105/chat')) {
+              return { ...w, url: 'about:blank' };
+            }
             // Automatically upgrade legacy broken popout URLs to embed
-            url: w.url?.includes('twitch.tv/popout/') 
-              ? w.url.replace('/popout/', '/embed/').concat('&parent=samo2105.github.io')
-              : w.url
-          }))
+            if (w.url?.includes('twitch.tv/popout/')) {
+              return {
+                ...w,
+                url: w.url.replace('/popout/', '/embed/').concat('&parent=samo2105.github.io'),
+              };
+            }
+            return w;
+          })
         : DEFAULT_CONFIG.widgets,
     };
   } catch (error) {

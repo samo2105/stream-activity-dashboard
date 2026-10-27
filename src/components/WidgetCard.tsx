@@ -35,6 +35,7 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
   const preset = PLATFORM_PRESETS[widget.platform] || PLATFORM_PRESETS.custom;
   const isPlaceholder = widget.url === 'about:blank' || widget.url.includes('TU_TOKEN') || widget.url.includes('TU_CANAL');
   const isTwitch = widget.platform === 'twitch' || widget.url.includes('twitch.tv');
+  const isChatbox = widget.platform === 'chatbox' || widget.url.includes('streamlabs.com/widgets/chat-box') || widget.url.includes('botrix.live/widgets/chat');
 
   // Automatically sanitize and adapt URLs for iframes
   const effectiveUrl = sanitizeStreamUrl(widget.url, widget.platform);
@@ -170,6 +171,18 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
             <ExternalLink className="w-2.5 h-2.5" />
             Popout Externo
           </a>
+        </div>
+      )}
+
+      {/* Streamlabs / Chat Box Status Note */}
+      {isChatbox && !isPlaceholder && (
+        <div className="bg-teal-950/30 border-b border-teal-500/20 px-3 py-1 flex items-center justify-between text-[11px] text-teal-300">
+          <span className="truncate">
+            💬 Chat Box activo (los mensajes aparecen aquí cuando alguien escribe en tu stream).
+          </span>
+          <span className="text-[10px] text-teal-400/80 px-1.5 py-0.5 rounded bg-teal-500/10 border border-teal-500/20">
+            En línea
+          </span>
         </div>
       )}
 
