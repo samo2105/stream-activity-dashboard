@@ -7,7 +7,7 @@ import { AddWidgetModal } from './components/AddWidgetModal';
 import { PresetsModal } from './components/PresetsModal';
 import { SettingsModal } from './components/SettingsModal';
 import { ProfileModal } from './components/ProfileModal';
-import { DashboardConfig, WidgetItem, GridColumns, ChannelsConfig, ThemeMode, CounterSize, ViewerStats, ActiveView } from './types/widget';
+import { DashboardConfig, WidgetItem, GridColumns, ChannelsConfig, ThemeMode, ViewerStats, ActiveView } from './types/widget';
 import { StreamHealthSummary } from './types/streamHealth';
 import { loadDashboardConfig, saveDashboardConfig, DEFAULT_CONFIG } from './utils/storage';
 import { runFullHealthDiagnostics, detectStreamDrops } from './utils/streamHealth';
@@ -70,11 +70,6 @@ export function App() {
   // Handle Columns Change
   const handleColumnsChange = (columns: GridColumns) => {
     setConfig((prev) => ({ ...prev, columns }));
-  };
-
-  // Handle Channels Change for Viewer Counter
-  const handleUpdateChannels = (channels: ChannelsConfig) => {
-    setConfig((prev) => ({ ...prev, channels }));
   };
 
   // Handle Save Channels from ProfileModal (with automatic widget updating)
@@ -219,24 +214,6 @@ export function App() {
         return w;
       }),
     }));
-  };
-
-  // Handle Global Theme Mode (Normal | Oscuro | Claro)
-  const handleGlobalThemeChange = (newTheme: ThemeMode) => {
-    setConfig((prev) => ({
-      ...prev,
-      themeMode: newTheme,
-      widgets: prev.widgets.map((w) => ({
-        ...w,
-        themeMode: newTheme,
-        highContrast: newTheme === 'dark',
-      })),
-    }));
-  };
-
-  // Handle Counter Size Change (sm | md | lg | xl)
-  const handleUpdateCounterSize = (counterSize: CounterSize) => {
-    setConfig((prev) => ({ ...prev, counterSize }));
   };
 
   // Run Real-Time Stream Health & Network Diagnostics (Ping measurement only, no drops by ping)
@@ -412,16 +389,10 @@ export function App() {
     }`}>
       {/* Top Navigation */}
       <Navbar
-        columns={config.columns}
-        onColumnsChange={handleColumnsChange}
         onOpenAddModal={handleOpenAdd}
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
-        onOpenPresetsModal={() => setIsPresetsModalOpen(true)}
-        onOpenProfileModal={() => setIsProfileModalOpen(true)}
-        channels={config.channels}
         totalWidgets={config.widgets.length}
         themeMode={currentThemeMode}
-        onThemeChange={handleGlobalThemeChange}
         activeView={activeView}
         onViewChange={handleViewChange}
         livePlatformsCount={livePlatformsCount}
@@ -431,14 +402,10 @@ export function App() {
       <ViewerBar
         channels={config.channels}
         themeMode={currentThemeMode}
-        counterSize={config.counterSize || 'md'}
         healthSummary={healthSummary}
         streamAlerts={streamAlerts}
         obsStatus={obsStatus}
         obsStats={obsStats}
-        onUpdateChannels={handleUpdateChannels}
-        onUpdateCounterSize={handleUpdateCounterSize}
-        onOpenProfileModal={() => setIsProfileModalOpen(true)}
         onOpenHealthModal={() => setIsHealthModalOpen(true)}
         onOpenObsModal={() => setIsObsModalOpen(true)}
         onStatsUpdate={handleViewerStatsUpdate}
@@ -450,6 +417,7 @@ export function App() {
           <WidgetGrid
             widgets={config.widgets}
             columns={config.columns}
+            onColumnsChange={handleColumnsChange}
             dashboardTheme={currentThemeMode}
             dashboardFontScale={config.globalFontScale || 1.0}
             viewerStats={viewerStats}

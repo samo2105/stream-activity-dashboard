@@ -1,47 +1,29 @@
 import React from 'react';
 import { 
-  Columns, 
   Plus, 
   Settings, 
-  Sparkles, 
   Github, 
   Tv2,
-  Radio,
-  Monitor,
-  Moon,
-  Sun,
   Layers,
   Video
 } from 'lucide-react';
-import { GridColumns, ChannelsConfig, ThemeMode, ActiveView } from '../types/widget';
+import { ThemeMode, ActiveView } from '../types/widget';
 
 interface NavbarProps {
-  columns: GridColumns;
-  onColumnsChange: (cols: GridColumns) => void;
+  totalWidgets: number;
   onOpenAddModal: () => void;
   onOpenSettingsModal: () => void;
-  onOpenPresetsModal: () => void;
-  onOpenProfileModal: () => void;
-  channels: ChannelsConfig;
-  totalWidgets: number;
-  themeMode: ThemeMode;
-  onThemeChange: (theme: ThemeMode) => void;
+  themeMode?: ThemeMode;
   activeView: ActiveView;
   onViewChange: (view: ActiveView) => void;
   livePlatformsCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  columns,
-  onColumnsChange,
+  totalWidgets,
   onOpenAddModal,
   onOpenSettingsModal,
-  onOpenPresetsModal,
-  onOpenProfileModal,
-  channels,
-  totalWidgets,
-  themeMode,
-  onThemeChange,
+  themeMode = 'normal',
   activeView,
   onViewChange,
   livePlatformsCount = 0,
@@ -142,125 +124,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Center / Layout & Theme Controls */}
-        <div className="flex items-center gap-2">
-          {/* Columns selector (visible in dashboard view) */}
-          {activeView === 'dashboard' && (
-            <div className={`flex items-center border rounded-lg p-1 text-xs ${
-              isLight ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-900 border-zinc-800'
-            }`}>
-              <span className={`px-2 flex items-center gap-1 hidden md:flex ${isLight ? 'text-zinc-500' : 'text-zinc-500'}`}>
-                <Columns className="w-3.5 h-3.5" />
-                Columnas:
-              </span>
-              {([1, 2, 3, 4] as GridColumns[]).map((col) => (
-                <button
-                  key={col}
-                  type="button"
-                  onClick={() => onColumnsChange(col)}
-                  className={`px-2.5 py-1 rounded font-medium transition-all ${
-                    columns === col
-                      ? 'bg-purple-600 text-white shadow'
-                      : isLight
-                      ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200'
-                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-                  }`}
-                  title={`Ver en ${col} columna${col > 1 ? 's' : ''}`}
-                >
-                  {col}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Quick Presets button (visible in dashboard view) */}
-          {activeView === 'dashboard' && (
-            <button
-              type="button"
-              onClick={onOpenPresetsModal}
-              className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
-                isLight
-                  ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-zinc-900 border-zinc-200'
-                  : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Plantillas
-            </button>
-          )}
-
-          {/* 3-Way Theme Selector: Normal (por defecto) | Oscuro | Claro */}
-          <div className={`flex items-center border rounded-lg p-0.5 text-xs ${
-            isLight ? 'bg-zinc-100 border-zinc-200' : isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-900 border-zinc-800'
-          }`}>
-            <button
-              type="button"
-              onClick={() => onThemeChange('normal')}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded font-medium transition-all ${
-                themeMode === 'normal'
-                  ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
-                  : isLight
-                  ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
-              }`}
-              title="Modo Normal (Por defecto: oscuro balanceado #09090b)"
-            >
-              <Monitor className={`w-3.5 h-3.5 ${themeMode === 'normal' ? 'text-purple-400' : ''}`} />
-              <span className="hidden md:inline">Normal</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onThemeChange('dark')}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded font-medium transition-all ${
-                themeMode === 'dark'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                  : isLight
-                  ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
-              }`}
-              title="Modo Oscuro (Fondo negro puro #000000 y alto contraste)"
-            >
-              <Moon className={`w-3.5 h-3.5 ${themeMode === 'dark' ? 'text-amber-400' : ''}`} />
-              <span className="hidden md:inline">Oscuro</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onThemeChange('light')}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded font-medium transition-all ${
-                themeMode === 'light'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : isLight
-                  ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
-              }`}
-              title="Modo Claro (Fondo blanco #ffffff y máxima luminosidad)"
-            >
-              <Sun className={`w-3.5 h-3.5 ${themeMode === 'light' ? 'text-amber-300' : ''}`} />
-              <span className="hidden md:inline">Claro</span>
-            </button>
-          </div>
-        </div>
-
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          {/* Configure Channels / Profile Button */}
-          <button
-            type="button"
-            onClick={onOpenProfileModal}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all shadow-sm ${
-              isLight 
-                ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-purple-300' 
-                : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-purple-500/30'
-            }`}
-            title="Configurar nombres de usuario y canales de stream"
-          >
-            <Radio className="w-3.5 h-3.5 text-purple-400" />
-            <span className={`hidden md:inline font-normal ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>Canal:</span>
-            <span className={`font-medium truncate max-w-[120px] ${isLight ? 'text-purple-700' : 'text-purple-300'}`}>
-              {channels.youtubeHandle ? `@${channels.youtubeHandle.replace(/^@/, '')}` : channels.twitch || channels.kick || channels.tiktok || channels.facebook || 'Mis Canales'}
-            </span>
-          </button>
-
           {/* Add Widget Button (when in dashboard) */}
           {activeView === 'dashboard' ? (
             <button
