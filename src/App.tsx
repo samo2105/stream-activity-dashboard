@@ -389,7 +389,6 @@ export function App() {
     }`}>
       {/* Top Navigation */}
       <Navbar
-        onOpenAddModal={handleOpenAdd}
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
         totalWidgets={config.widgets.length}
         themeMode={currentThemeMode}

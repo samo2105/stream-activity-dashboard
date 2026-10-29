@@ -1,6 +1,5 @@
 import React from 'react';
 import { 
-  Plus, 
   Settings, 
   Github, 
   Tv2,
@@ -11,7 +10,6 @@ import { ThemeMode, ActiveView } from '../types/widget';
 
 interface NavbarProps {
   totalWidgets: number;
-  onOpenAddModal: () => void;
   onOpenSettingsModal: () => void;
   themeMode?: ThemeMode;
   activeView: ActiveView;
@@ -21,7 +19,6 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   totalWidgets,
-  onOpenAddModal,
   onOpenSettingsModal,
   themeMode = 'normal',
   activeView,
@@ -126,36 +123,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          {/* Add Widget Button (when in dashboard) */}
-          {activeView === 'dashboard' ? (
-            <button
-              type="button"
-              onClick={onOpenAddModal}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white rounded-lg shadow-md shadow-purple-600/20 transition-all active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Añadir Widget</span>
-              {totalWidgets > 0 && (
-                <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-purple-800/80 text-[10px]">
-                  {totalWidgets}
-                </span>
-              )}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onViewChange('dashboard')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
-                isLight 
-                  ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border-zinc-200' 
-                  : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-800'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5 text-purple-400" />
-              <span className="hidden sm:inline">Ir a Widgets</span>
-            </button>
-          )}
-
           {/* Settings / Backup */}
           <button
             type="button"

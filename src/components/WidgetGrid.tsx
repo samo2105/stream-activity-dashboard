@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Sparkles, LayoutGrid, Columns } from 'lucide-react';
+import { Plus, Sparkles, LayoutGrid, Columns, Layers } from 'lucide-react';
 import { WidgetItem, GridColumns, ThemeMode, ViewerStats } from '../types/widget';
 import { isWidgetStreamActive } from '../utils/streamHealth';
 import { WidgetCard } from './WidgetCard';
@@ -90,23 +90,31 @@ export const WidgetGrid: React.FC<WidgetGridProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Grid Toolbar / Header with Columns Selector */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-1 border-b border-zinc-800/60">
+      {/* Grid Toolbar / Header - Only Chips & Buttons */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-zinc-800/60">
         <div className="flex items-center gap-2">
-          <span className={`text-xs font-semibold uppercase tracking-wider ${isLight ? 'text-zinc-600' : 'text-zinc-400'}`}>
-            Cuadrícula de Widgets
-          </span>
-          <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 font-medium">
-            {widgets.length} {widgets.length === 1 ? 'widget' : 'widgets'}
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/25">
+            <Layers className="w-3.5 h-3.5 text-purple-400" />
+            <span>{widgets.length} {widgets.length === 1 ? 'widget' : 'widgets'}</span>
           </span>
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Add Widget Button */}
+          <button
+            type="button"
+            onClick={onOpenAddModal}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white rounded-lg shadow-sm shadow-purple-600/20 transition-all active:scale-95"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Añadir Widget</span>
+          </button>
+
           {/* Quick Presets button */}
           <button
             type="button"
             onClick={onOpenPresetsModal}
-            className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
               isLight
                 ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-zinc-900 border-zinc-200'
                 : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800'
@@ -118,10 +126,10 @@ export const WidgetGrid: React.FC<WidgetGridProps> = ({
 
           {/* Columns Selector */}
           {onColumnsChange && (
-            <div className={`flex items-center border rounded-lg p-1 text-xs ${
+            <div className={`flex items-center border rounded-lg p-0.5 text-xs ${
               isLight ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-900 border-zinc-800'
             }`}>
-              <span className={`px-2 flex items-center gap-1 ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>
+              <span className={`px-2 flex items-center gap-1 text-[11px] ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>
                 <Columns className="w-3.5 h-3.5" />
                 Columnas:
               </span>
@@ -130,9 +138,9 @@ export const WidgetGrid: React.FC<WidgetGridProps> = ({
                   key={col}
                   type="button"
                   onClick={() => onColumnsChange(col)}
-                  className={`px-2.5 py-1 rounded font-medium transition-all ${
+                  className={`px-2.5 py-0.5 rounded font-medium transition-all ${
                     columns === col
-                      ? 'bg-purple-600 text-white shadow'
+                      ? 'bg-purple-600 text-white shadow-sm'
                       : isLight
                       ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200'
                       : 'text-zinc-400 hover:text-white hover:bg-zinc-800'

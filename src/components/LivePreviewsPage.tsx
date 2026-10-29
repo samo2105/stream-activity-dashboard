@@ -6,7 +6,6 @@ import {
   RotateCw, 
   LayoutGrid, 
   Maximize2, 
-  Flame, 
   Play, 
   Square, 
   Disc
@@ -56,8 +55,6 @@ export const LivePreviewsPage: React.FC<LivePreviewsPageProps> = ({
     (viewerStats?.tiktok?.isLive ? 1 : 0)
   );
 
-  const totalViewers = viewerStats?.total || 0;
-
   const platforms: {
     key: PreviewPlatformType;
     channel: string;
@@ -97,128 +94,82 @@ export const LivePreviewsPage: React.FC<LivePreviewsPageProps> = ({
       isLight ? 'bg-zinc-100/70 text-zinc-900' : isDark ? 'bg-black text-zinc-100' : 'bg-zinc-950 text-zinc-100'
     }`}>
       <div className="max-w-[1920px] mx-auto space-y-6">
-        {/* Studio Top Control Bar */}
-        <div className={`p-4 sm:p-5 rounded-2xl border transition-all shadow-sm ${
-          isLight ? 'bg-white border-zinc-200' : 'bg-zinc-900/80 border-zinc-800'
-        }`}>
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            {/* Title & Live Status Summary */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <div className="p-2 rounded-xl bg-purple-600/15 text-purple-400 border border-purple-500/30">
-                  <Tv2 className="w-5 h-5" />
-                </div>
-                <h2 className="text-lg font-bold tracking-tight">
-                  Live Previews & Control Studio
-                </h2>
-                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${liveCount > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`} />
-                  <span>{liveCount} de 5 plataformas en directo</span>
-                </span>
-              </div>
-              <p className={`text-xs ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                Visualiza tus streams de video simultáneos en tiempo real y gestiona la configuración de cada plataforma.
-              </p>
-            </div>
+        {/* Studio Toolbar / Header - Only Chips & Buttons */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-zinc-800/60">
+          {/* Left: Chip with live platforms count */}
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
+              liveCount > 0
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                : isLight
+                ? 'bg-zinc-100 text-zinc-600 border-zinc-200'
+                : 'bg-zinc-900 text-zinc-400 border-zinc-800'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${liveCount > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`} />
+              <span>{liveCount > 0 ? `${liveCount} de 5 en directo` : '5 plataformas'}</span>
+            </span>
+          </div>
 
-            {/* Quick Metrics & Global Controls */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              {/* Total Viewers Flame Chip */}
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-medium text-xs ${
-                isLight 
-                  ? 'bg-amber-50 border-amber-200 text-amber-800' 
-                  : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-              }`}>
-                <Flame className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="font-normal opacity-80">Total Audiencia:</span>
-                <span className="font-bold text-sm tracking-tight">{totalViewers.toLocaleString()}</span>
-              </div>
-
-              {/* OBS Status Pill */}
+          {/* Right: Controls & Buttons */}
+          <div className="flex items-center gap-2">
+            {/* Layout Mode: Grid vs Theater */}
+            <div className={`flex items-center border rounded-lg p-0.5 text-xs ${
+              isLight ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-900 border-zinc-800'
+            }`}>
               <button
                 type="button"
-                onClick={onOpenObsModal}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all hover:scale-[1.02] cursor-pointer ${
-                  obsStatus === 'connected'
-                    ? obsStats?.outputActive
-                      ? 'bg-purple-600/20 border-purple-500/40 text-purple-300'
-                      : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300'
-                    : isLight
-                    ? 'bg-zinc-100 border-zinc-300 text-zinc-700'
-                    : 'bg-zinc-800/80 border-zinc-700 text-zinc-300'
+                onClick={() => setLayoutMode('grid')}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded font-medium transition-all ${
+                  layoutMode === 'grid'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : isLight ? 'text-zinc-600 hover:text-zinc-900' : 'text-zinc-400 hover:text-white'
                 }`}
-                title="Estado de conexión con OBS Studio WebSocket"
+                title="Ver todas las plataformas en cuadrícula de mosaico"
               >
-                <Tv2 className="w-4 h-4 text-purple-400 shrink-0" />
-                <span>OBS:</span>
-                <span className={obsStatus === 'connected' ? (obsStats?.outputActive ? 'text-emerald-400' : 'text-purple-300') : 'text-zinc-400'}>
-                  {obsStatus === 'connected' ? (obsStats?.outputActive ? 'EN VIVO' : 'Listo') : 'Desconectado'}
-                </span>
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Mosaico</span>
               </button>
-
-              <div className={`h-6 w-[1px] hidden sm:block ${isLight ? 'bg-zinc-200' : 'bg-zinc-800'}`} />
-
-              {/* Layout Mode: Grid vs Theater */}
-              <div className={`flex items-center rounded-xl p-0.5 border text-xs ${
-                isLight ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-950 border-zinc-800'
-              }`}>
-                <button
-                  type="button"
-                  onClick={() => setLayoutMode('grid')}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg font-medium transition-all ${
-                    layoutMode === 'grid'
-                      ? 'bg-purple-600 text-white shadow-sm'
-                      : isLight ? 'text-zinc-600 hover:text-black' : 'text-zinc-400 hover:text-white'
-                  }`}
-                  title="Ver todas las plataformas en cuadrícula de mosaico"
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Mosaico</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLayoutMode('theater')}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg font-medium transition-all ${
-                    layoutMode === 'theater'
-                      ? 'bg-purple-600 text-white shadow-sm'
-                      : isLight ? 'text-zinc-600 hover:text-black' : 'text-zinc-400 hover:text-white'
-                  }`}
-                  title="Modo Teatro: stream principal grande con miniaturas al pie"
-                >
-                  <Maximize2 className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Teatro</span>
-                </button>
-              </div>
-
-              {/* Global Mute Toggle */}
               <button
                 type="button"
-                onClick={() => setIsGlobalMuted(!isGlobalMuted)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
-                  isGlobalMuted
-                    ? isLight ? 'bg-zinc-100 border-zinc-300 text-zinc-700' : 'bg-zinc-800 border-zinc-700 text-zinc-300'
-                    : 'bg-purple-600 hover:bg-purple-500 text-white border-purple-500 shadow-sm'
+                onClick={() => setLayoutMode('theater')}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded font-medium transition-all ${
+                  layoutMode === 'theater'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : isLight ? 'text-zinc-600 hover:text-zinc-900' : 'text-zinc-400 hover:text-white'
                 }`}
-                title={isGlobalMuted ? 'Todos los streams están silenciados para evitar solapamiento de audio' : 'Silenciar todos los reproductores'}
+                title="Modo Teatro: stream principal grande con miniaturas al pie"
               >
-                {isGlobalMuted ? <VolumeX className="w-4 h-4 text-amber-400" /> : <Volume2 className="w-4 h-4 text-white" />}
-                <span className="hidden sm:inline">
-                  {isGlobalMuted ? 'Silenciar Todos (Activo)' : 'Audio Global Activado'}
-                </span>
-              </button>
-
-              {/* Reload All */}
-              <button
-                type="button"
-                onClick={() => setGlobalReloadKey((prev) => prev + 1)}
-                className={`p-2 rounded-xl border transition-colors ${
-                  isLight ? 'bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-700' : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-300 hover:text-white'
-                }`}
-                title="Recargar todos los reproductores de stream"
-              >
-                <RotateCw className="w-4 h-4" />
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>Teatro</span>
               </button>
             </div>
+
+            {/* Global Mute Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsGlobalMuted(!isGlobalMuted)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                isGlobalMuted
+                  ? isLight ? 'bg-zinc-100 border-zinc-300 text-zinc-700' : 'bg-zinc-900 border-zinc-800 text-zinc-300'
+                  : 'bg-purple-600 hover:bg-purple-500 text-white border-purple-500 shadow-sm'
+              }`}
+              title={isGlobalMuted ? 'Todos los streams están silenciados para evitar solapamiento de audio' : 'Silenciar todos los reproductores'}
+            >
+              {isGlobalMuted ? <VolumeX className="w-3.5 h-3.5 text-amber-400" /> : <Volume2 className="w-3.5 h-3.5 text-white" />}
+              <span>{isGlobalMuted ? 'Silenciado' : 'Audio On'}</span>
+            </button>
+
+            {/* Reload All */}
+            <button
+              type="button"
+              onClick={() => setGlobalReloadKey((prev) => prev + 1)}
+              className={`p-1.5 rounded-lg border transition-colors ${
+                isLight ? 'bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-700' : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-300 hover:text-white'
+              }`}
+              title="Recargar todos los reproductores de stream"
+            >
+              <RotateCw className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 
