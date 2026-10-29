@@ -23,6 +23,18 @@ interface AddWidgetModalProps {
   channels: ChannelsConfig;
 }
 
+const TOP_SELECTOR_PLATFORMS: WidgetPlatform[] = [
+  'streamlabs',
+  'streamelements',
+  'twitch',
+  'kick',
+  'youtube',
+  'facebook',
+  'botrix',
+  'tiktok',
+  'custom',
+];
+
 export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   isOpen,
   onClose,
@@ -240,13 +252,12 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
       id = id.split('youtu.be/')[1]?.split('?')[0] || id;
     } else if (id.includes('live/')) {
       id = id.split('live/')[1]?.split('?')[0] || id;
-    } else if (id.toLowerCase() === 'zannito' || id.toLowerCase() === '@zannito' || id.includes('zannito')) {
-      id = 'SwjSwFWmxl0';
     }
-    const ytUrl = `https://www.youtube.com/live_chat?v=${id}&embed_domain=${currentHost}&dark_theme=1`;
+    const cleanId = id.replace(/^@/, '');
+    const ytUrl = `https://www.youtube.com/live_chat?v=${cleanId}&embed_domain=${currentHost}&dark_theme=1`;
     setUrl(ytUrl);
     if (!editingWidget || title.startsWith('YouTube')) {
-      setTitle(id === 'SwjSwFWmxl0' ? 'YouTube Chat (@zannito - Warlock de Abismo)' : `YouTube Chat (${id})`);
+      setTitle(cleanId ? `YouTube Chat (${cleanId})` : 'YouTube Chat');
     }
   };
 
@@ -333,10 +344,10 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
             <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
               Tipo de Fuente o Widget
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {(Object.keys(PLATFORM_PRESETS) as WidgetPlatform[]).map((pKey) => {
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+              {TOP_SELECTOR_PLATFORMS.map((pKey) => {
                 const item = PLATFORM_PRESETS[pKey];
-                const isSelected = platform === pKey;
+                const isSelected = platform === pKey || (pKey === 'streamlabs' && (platform === 'eventlist' || platform === 'chatbox'));
                 return (
                   <button
                     key={pKey}
@@ -482,19 +493,21 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
                   className="flex-1 px-3 py-1.5 text-xs bg-zinc-950 border border-red-500/30 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-red-400"
                 />
               </div>
-              <button
-                type="button"
-                onClick={() => handleGenerateYoutubeUrl('SwjSwFWmxl0')}
-                className="w-full text-[11px] text-red-300 hover:text-white bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-colors text-left"
-              >
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <span>En directo ahora: <strong>@zannito</strong> (Warlock de Abismo)</span>
-                </span>
-                <span className="font-mono text-[10px] text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded">
-                  ID: SwjSwFWmxl0
-                </span>
-              </button>
+              {channels.youtube && (
+                <button
+                  type="button"
+                  onClick={() => handleGenerateYoutubeUrl(channels.youtube)}
+                  className="w-full text-[11px] text-zinc-300 hover:text-white bg-zinc-950/80 hover:bg-zinc-850 border border-zinc-800 px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-colors text-left"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-zinc-500" />
+                    <span>Cargar canal/stream configurado ({channels.youtubeHandle ? `@${channels.youtubeHandle.replace(/^@/, '')}` : channels.youtube})</span>
+                  </span>
+                  <span className="font-mono text-[10px] text-zinc-400 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-700">
+                    {channels.youtube}
+                  </span>
+                </button>
+              )}
             </div>
           )}
 

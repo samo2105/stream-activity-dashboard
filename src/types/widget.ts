@@ -15,6 +15,17 @@ export type ThemeMode = 'normal' | 'dark' | 'light';
 
 export type CounterSize = 'sm' | 'md' | 'lg' | 'xl';
 
+export type ActiveView = 'dashboard' | 'previews';
+
+export type PreviewLayoutMode = 'grid' | 'theater';
+
+export interface PlatformStreamConfigDraft {
+  title?: string;
+  category?: string;
+  tags?: string[];
+  privacy?: 'public' | 'unlisted' | 'private';
+}
+
 export interface WidgetItem {
   id: string;
   title: string;

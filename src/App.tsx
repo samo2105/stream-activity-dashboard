@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { ViewerBar } from './components/ViewerBar';
 import { WidgetGrid } from './components/WidgetGrid';
+import { LivePreviewsPage } from './components/LivePreviewsPage';
 import { AddWidgetModal } from './components/AddWidgetModal';
 import { PresetsModal } from './components/PresetsModal';
 import { SettingsModal } from './components/SettingsModal';
 import { ProfileModal } from './components/ProfileModal';
-import { DashboardConfig, WidgetItem, GridColumns, ChannelsConfig, ThemeMode, CounterSize, ViewerStats } from './types/widget';
+import { DashboardConfig, WidgetItem, GridColumns, ChannelsConfig, ThemeMode, CounterSize, ViewerStats, ActiveView } from './types/widget';
 import { StreamHealthSummary } from './types/streamHealth';
 import { loadDashboardConfig, saveDashboardConfig, DEFAULT_CONFIG } from './utils/storage';
 import { runFullHealthDiagnostics, detectStreamDrops } from './utils/streamHealth';
@@ -31,6 +32,35 @@ export function App() {
   const [obsStats, setObsStats] = useState<ObsStreamStats>(INITIAL_OBS_STATS);
   const [obsErrorMsg, setObsErrorMsg] = useState<string | undefined>();
   const [editingWidget, setEditingWidget] = useState<WidgetItem | null>(null);
+  const [activeView, setActiveView] = useState<ActiveView>(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#previews') {
+      return 'previews';
+    }
+    return 'dashboard';
+  });
+
+  // Sync hash changes (e.g. browser back/forward or bookmark)
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (typeof window !== 'undefined') {
+        if (window.location.hash === '#previews') {
+          setActiveView('previews');
+        } else if (window.location.hash === '#dashboard' || !window.location.hash) {
+          setActiveView('dashboard');
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const handleViewChange = (view: ActiveView) => {
+    setActiveView(view);
+    if (typeof window !== 'undefined') {
+      window.location.hash = view === 'previews' ? '#previews' : '#dashboard';
+    }
+  };
 
   // Sync with localStorage on config changes
   useEffect(() => {
@@ -364,6 +394,14 @@ export function App() {
     setIsAddModalOpen(true);
   };
 
+  const livePlatformsCount = (
+    (viewerStats?.twitch?.isLive ? 1 : 0) +
+    (viewerStats?.kick?.isLive ? 1 : 0) +
+    (viewerStats?.youtube?.isLive ? 1 : 0) +
+    (viewerStats?.facebook?.isLive ? 1 : 0) +
+    (viewerStats?.tiktok?.isLive ? 1 : 0)
+  );
+
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-200 ${
       isLight 
@@ -384,6 +422,9 @@ export function App() {
         totalWidgets={config.widgets.length}
         themeMode={currentThemeMode}
         onThemeChange={handleGlobalThemeChange}
+        activeView={activeView}
+        onViewChange={handleViewChange}
+        livePlatformsCount={livePlatformsCount}
       />
 
       {/* Live Viewers Bar */}
@@ -403,23 +444,37 @@ export function App() {
         onStatsUpdate={handleViewerStatsUpdate}
       />
 
-      {/* Main Stream Activity Grid */}
+      {/* Main Content: Widgets Grid or Live Previews Studio */}
       <main className="flex-1 max-w-[1920px] w-full mx-auto p-4 sm:p-5">
-        <WidgetGrid
-          widgets={config.widgets}
-          columns={config.columns}
-          dashboardTheme={currentThemeMode}
-          dashboardFontScale={config.globalFontScale || 1.0}
-          viewerStats={viewerStats}
-          obsStreamingActive={obsStats.outputActive}
-          onDeleteWidget={handleDeleteWidget}
-          onEditWidget={handleEditWidget}
-          onToggleSpan={handleToggleSpan}
-          onCycleTheme={handleCycleWidgetTheme}
-          onUpdateFontScale={handleUpdateWidgetFontScale}
-          onOpenAddModal={handleOpenAdd}
-          onOpenPresetsModal={() => setIsPresetsModalOpen(true)}
-        />
+        {activeView === 'dashboard' ? (
+          <WidgetGrid
+            widgets={config.widgets}
+            columns={config.columns}
+            dashboardTheme={currentThemeMode}
+            dashboardFontScale={config.globalFontScale || 1.0}
+            viewerStats={viewerStats}
+            obsStreamingActive={obsStats.outputActive}
+            onDeleteWidget={handleDeleteWidget}
+            onEditWidget={handleEditWidget}
+            onToggleSpan={handleToggleSpan}
+            onCycleTheme={handleCycleWidgetTheme}
+            onUpdateFontScale={handleUpdateWidgetFontScale}
+            onOpenAddModal={handleOpenAdd}
+            onOpenPresetsModal={() => setIsPresetsModalOpen(true)}
+          />
+        ) : (
+          <LivePreviewsPage
+            channels={config.channels}
+            viewerStats={viewerStats}
+            themeMode={currentThemeMode}
+            obsStatus={obsStatus}
+            obsStats={obsStats}
+            onOpenObsModal={() => setIsObsModalOpen(true)}
+            onOpenProfileModal={() => setIsProfileModalOpen(true)}
+            onToggleObsStream={handleToggleObsStream}
+            onToggleObsRecord={handleToggleObsRecord}
+          />
+        )}
       </main>
 
       {/* Footer Info Bar */}
@@ -434,7 +489,7 @@ export function App() {
           <div className="flex items-center gap-3">
             <span className={`flex items-center gap-1.5 ${isLight ? 'text-zinc-600' : 'text-zinc-400'}`}>
               <Layers className="w-3.5 h-3.5 text-purple-500" />
-              <span>{config.widgets.length} widgets activos</span>
+              <span>{activeView === 'dashboard' ? `${config.widgets.length} widgets activos` : 'Live Previews & Control Studio (5 plataformas)'}</span>
             </span>
             <span className={isLight ? 'text-zinc-300' : 'text-zinc-700'}>•</span>
             <span className={`flex items-center gap-1.5 ${isLight ? 'text-zinc-600' : 'text-zinc-400'}`}>

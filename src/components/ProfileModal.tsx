@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Radio, Youtube, Twitch, HelpCircle, Check, Loader2 } from 'lucide-react';
 import { ChannelsConfig, WidgetItem } from '../types/widget';
 import { DEFAULT_STREAMLABS_TOKEN } from '../utils/presets';
+import { fetchYouTubeViewers } from '../utils/viewers';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -34,7 +35,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [scanMessage, setScanMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    setYoutubeChannel(channels.youtubeHandle || (channels.youtube === 'SwjSwFWmxl0' ? 'zannito' : channels.youtube) || '');
+    setYoutubeChannel(channels.youtubeHandle || channels.youtube || '');
     setYoutubeStreamId(channels.youtube || '');
     setYoutubeApiKey(channels.youtubeApiKey || '');
     setTwitchChannel(channels.twitch || '');
@@ -69,58 +70,28 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       extractedId = rawInput;
     }
 
-    if (extractedId) {
-      setYoutubeStreamId(extractedId);
-      setScanMessage(`¡ID de video detectado! ID: ${extractedId}`);
-      return;
-    }
-
     const handle = rawInput.replace(/^@/, '');
 
     setIsScanning(true);
-    setScanMessage('Escaneando canal de YouTube en vivo...');
+    setScanMessage('Comprobando si el canal está en vivo en YouTube...');
 
     try {
-      // 1. First attempt: DecAPI latest video resolution by handle
-      try {
-        const decRes = await fetch(`https://decapi.me/youtube/latest_video?handle=${encodeURIComponent(handle)}&format=%7Bid%7D&_t=${Date.now()}`);
-        if (decRes.ok) {
-          const decId = (await decRes.text()).trim();
-          if (/^[a-zA-Z0-9_-]{11}$/.test(decId)) {
-            setYoutubeStreamId(decId);
-            setScanMessage(`¡Directo/Video detectado con éxito! ID: ${decId}`);
-            setIsScanning(false);
-            return;
-          }
+      const result = await fetchYouTubeViewers(extractedId, youtubeApiKey, handle);
+      if (result.isLive) {
+        if (result.videoId) {
+          setYoutubeStreamId(result.videoId);
         }
-      } catch {
-        // Fallback to proxy
-      }
-
-      // 2. Known active stream for @zannito
-      if (handle.toLowerCase() === 'zannito') {
-        setYoutubeStreamId('SwjSwFWmxl0');
-        setScanMessage('¡Directo encontrado! ID: SwjSwFWmxl0 ("Warlock de Abismo! | D2R Ladder")');
-        setIsScanning(false);
-        return;
-      }
-
-      // 3. Try resolving via public proxies
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.youtube.com/@${handle}/live`)}`;
-      const res = await fetch(proxyUrl);
-      if (res.ok) {
-        const text = await res.text();
-        const match = text.match(/watch\?v=([a-zA-Z0-9_-]{11})/);
-        if (match && match[1]) {
-          setYoutubeStreamId(match[1]);
-          setScanMessage(`¡Directo activo detectado! ID: ${match[1]}`);
-          setIsScanning(false);
-          return;
+        setScanMessage(`🔴 ¡En vivo ahora! ID: ${result.videoId || extractedId} (${result.viewers.toLocaleString()} espectadores)`);
+      } else {
+        if (result.videoId) {
+          setYoutubeStreamId(result.videoId);
+          setScanMessage(`⚪ Offline: No hay emisión en vivo activa en este momento (Último video: ${result.videoId}).`);
+        } else {
+          setScanMessage('⚪ Offline: No se detectó ninguna transmisión en vivo activa en el canal.');
         }
       }
-      setScanMessage('No se pudo auto-detectar stream activo. Puedes ingresar el ID manualmente a la derecha.');
-    } catch (e) {
-      setScanMessage('No se pudo conectar con YouTube. Ingresa el ID del video manualmente.');
+    } catch {
+      setScanMessage('No se pudo verificar el estado en YouTube. Puedes ingresar el ID manualmente.');
     } finally {
       setIsScanning(false);
     }
@@ -203,7 +174,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
     onSaveChannels(
       {
-        youtube: cleanYt || (cleanYtHandle.toLowerCase() === 'zannito' ? 'SwjSwFWmxl0' : cleanYtHandle),
+        youtube: cleanYt || cleanYtHandle,
         youtubeHandle: cleanYtHandle,
         youtubeApiKey: cleanApiKey || undefined,
         twitch: cleanTwitch,

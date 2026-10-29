@@ -181,9 +181,10 @@ export async function fetchYouTubeViewers(
         const item = data?.items?.[0];
         if (item) {
           const ls = item.liveStreamingDetails;
-          if (ls && !ls.actualEndTime) {
+          const isLive = item.snippet?.liveBroadcastContent === 'live' && !ls?.actualEndTime;
+          if (isLive) {
             return {
-              viewers: parseInt(ls.concurrentViewers, 10) || 0,
+              viewers: parseInt(ls?.concurrentViewers, 10) || 0,
               isLive: true,
               videoId: targetId,
             };
@@ -205,7 +206,8 @@ export async function fetchYouTubeViewers(
         const item = streamData?.items?.[0];
         if (item) {
           const ls = item.liveStreamingDetails;
-          const isLiveBroadcast = item.snippet?.liveBroadcastContent === 'live' || (ls && !ls.actualEndTime);
+          // A stream is LIVE strictly if snippet.liveBroadcastContent is 'live' AND actualEndTime is NOT set
+          const isLiveBroadcast = item.snippet?.liveBroadcastContent === 'live' && !ls?.actualEndTime;
           if (isLiveBroadcast) {
             const count = ls?.concurrentViewers ? parseInt(ls.concurrentViewers, 10) : 0;
             return {
@@ -214,7 +216,7 @@ export async function fetchYouTubeViewers(
               videoId: targetId,
             };
           }
-          // The video stream is concluded/VOD
+          // The video stream is concluded/VOD or standard upload
           return { viewers: 0, isLive: false, videoId: targetId };
         }
       }
@@ -223,17 +225,15 @@ export async function fetchYouTubeViewers(
     }
   }
 
-  // 3. oEmbed Fallback Detection
+  // 3. Fallback: oEmbed verifies whether the video ID exists, but NEVER proves it is an active live stream.
+  // We check existence for URL validation, but always return isLive: false to prevent false positives when offline.
   if (/^[a-zA-Z0-9_-]{11}$/.test(targetId)) {
     try {
       const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${targetId}&format=json`);
       if (oembedRes.ok) {
-        const data = await oembedRes.json();
-        // In YouTube oEmbed, active live streams return height: 150 (ratio 4:3), while VODs/uploads return height: 113 (ratio 16:9).
-        const isLiveStream = data.height === 150 || !data.title;
         return {
-          viewers: isLiveStream ? 1 : 0,
-          isLive: isLiveStream,
+          viewers: 0,
+          isLive: false,
           videoId: targetId,
         };
       }

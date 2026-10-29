@@ -153,11 +153,6 @@ export function sanitizeStreamUrl(rawUrl: string, platform: WidgetPlatform): str
 
   // 3. YOUTUBE DEBUGGING & FORMATTING
   if (platform === 'youtube' || url.includes('youtube.com') || url.includes('youtu.be')) {
-    // Check if channel is @zannito
-    if (url.includes('@zannito') || url.includes('/zannito')) {
-      return `https://www.youtube.com/live_chat?v=SwjSwFWmxl0&embed_domain=${encodeURIComponent(currentHost)}&dark_theme=1`;
-    }
-
     let videoId = '';
     if (url.includes('v=')) {
       videoId = url.split('v=')[1]?.split('&')[0] || '';
@@ -271,4 +266,89 @@ export function generateTikTokEmbedUrl(input: string, mode: 'player' | 'chat' = 
 
   const baseLiveUrl = `https://www.tiktok.com/@${username}/live`;
   return mode === 'chat' ? `${baseLiveUrl}#chat` : baseLiveUrl;
+}
+
+/**
+ * Generates official embed player URL for Twitch Live stream.
+ */
+export function generateTwitchPlayerEmbedUrl(channel: string, muted: boolean = true, hostOverride?: string): string {
+  const clean = extractCleanUrl(channel)
+    .replace(/^https?:\/\/(www\.)?twitch\.tv\/?/i, '')
+    .replace(/\/.*$/, '')
+    .replace(/^@+/, '')
+    .trim();
+  if (!clean) return '';
+
+  const host = hostOverride || (typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost');
+  return `https://player.twitch.tv/?channel=${encodeURIComponent(clean)}&parent=${encodeURIComponent(host)}&parent=samo2105.github.io&muted=${muted}&autoplay=true`;
+}
+
+/**
+ * Generates official embed player URL for YouTube Live stream.
+ */
+export function generateYouTubePlayerEmbedUrl(videoIdOrUrl: string, muted: boolean = true): string {
+  const clean = extractCleanUrl(videoIdOrUrl).trim();
+  if (!clean) return '';
+
+  let videoId = clean;
+  if (clean.includes('v=')) {
+    videoId = clean.split('v=')[1]?.split('&')[0] || clean;
+  } else if (clean.includes('youtu.be/')) {
+    videoId = clean.split('youtu.be/')[1]?.split('?')[0] || clean;
+  } else if (clean.includes('live/')) {
+    videoId = clean.split('live/')[1]?.split('?')[0] || clean;
+  } else if (clean.includes('embed/')) {
+    videoId = clean.split('embed/')[1]?.split('?')[0] || clean;
+  } else {
+    videoId = clean.replace(/^@+/, '');
+  }
+
+  return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1&mute=${muted ? 1 : 0}&enablejsapi=1&rel=0`;
+}
+
+/**
+ * Generates official embed player URL for Kick Live stream.
+ */
+export function generateKickPlayerEmbedUrl(channel: string, muted: boolean = true): string {
+  const clean = extractCleanUrl(channel)
+    .replace(/^https?:\/\/(www\.)?kick\.com\/?/i, '')
+    .replace(/\/.*$/, '')
+    .replace(/^@+/, '')
+    .trim();
+  if (!clean) return '';
+
+  return `https://player.kick.com/${encodeURIComponent(clean)}?autoplay=true&muted=${muted}`;
+}
+
+/**
+ * Generates official embed video player URL for Facebook Live stream.
+ */
+export function generateFacebookPlayerEmbedUrl(urlOrChannel: string, muted: boolean = true): string {
+  const clean = extractCleanUrl(urlOrChannel).trim();
+  if (!clean) return '';
+
+  let fullUrl = clean;
+  if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+    const cleanChan = clean.replace(/^@/, '');
+    fullUrl = `https://www.facebook.com/${cleanChan}/live`;
+  }
+
+  return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fullUrl)}&show_text=false&autoplay=true&mute=${muted ? 1 : 0}`;
+}
+
+/**
+ * Generates official responsive player URL for TikTok LIVE stream.
+ */
+export function generateTikTokPlayerEmbedUrl(channelOrUrl: string): string {
+  const clean = extractCleanUrl(channelOrUrl).trim();
+  if (!clean) return '';
+
+  if (clean.startsWith('http://') || clean.startsWith('https://')) {
+    return clean;
+  }
+
+  const username = clean.replace(/^@+/, '').trim();
+  if (!username) return '';
+
+  return `https://www.tiktok.com/@${encodeURIComponent(username)}/live`;
 }

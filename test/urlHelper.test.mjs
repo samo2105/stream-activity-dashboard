@@ -5,6 +5,12 @@ import {
   validateWidgetUrl,
   sanitizeStreamUrl,
   generateFacebookEmbedUrl,
+  generateTikTokEmbedUrl,
+  generateTwitchPlayerEmbedUrl,
+  generateYouTubePlayerEmbedUrl,
+  generateKickPlayerEmbedUrl,
+  generateFacebookPlayerEmbedUrl,
+  generateTikTokPlayerEmbedUrl,
 } from '../src/utils/urlHelper.ts';
 
 test('extractCleanUrl extracts valid URLs from messy user input', () => {
@@ -55,4 +61,92 @@ test('sanitizeStreamUrl formats Facebook URLs into official responsive iframes',
 
   const alreadyEmbed = 'https://www.facebook.com/plugins/video.php?href=test';
   assert.equal(sanitizeStreamUrl(alreadyEmbed, 'facebook'), alreadyEmbed);
+});
+
+test('generateTikTokEmbedUrl correctly formats handles and preserves third-party widgets', () => {
+  assert.equal(generateTikTokEmbedUrl(''), '');
+  assert.equal(
+    generateTikTokEmbedUrl('@streamerpro', 'player'),
+    'https://www.tiktok.com/@streamerpro/live'
+  );
+  assert.equal(
+    generateTikTokEmbedUrl('https://www.tiktok.com/@streamerpro/live', 'chat'),
+    'https://www.tiktok.com/@streamerpro/live#chat'
+  );
+
+  const tikfinityUrl = 'https://tikfinity.zerody.one/widget/chat?id=12345';
+  assert.equal(generateTikTokEmbedUrl(tikfinityUrl), tikfinityUrl);
+});
+
+test('generateTwitchPlayerEmbedUrl builds official twitch player with parent domain and muted state', () => {
+  assert.equal(generateTwitchPlayerEmbedUrl(''), '');
+
+  const defaultMuted = generateTwitchPlayerEmbedUrl('zannito21', true, 'localhost');
+  assert.ok(defaultMuted.includes('player.twitch.tv/?channel=zannito21'));
+  assert.ok(defaultMuted.includes('parent=localhost'));
+  assert.ok(defaultMuted.includes('parent=samo2105.github.io'));
+  assert.ok(defaultMuted.includes('muted=true'));
+  assert.ok(defaultMuted.includes('autoplay=true'));
+
+  const unmuted = generateTwitchPlayerEmbedUrl('https://twitch.tv/zannito21', false, 'example.com');
+  assert.ok(unmuted.includes('channel=zannito21'));
+  assert.ok(unmuted.includes('parent=example.com'));
+  assert.ok(unmuted.includes('muted=false'));
+});
+
+test('generateYouTubePlayerEmbedUrl handles direct IDs, full URLs, and muted flag', () => {
+  assert.equal(generateYouTubePlayerEmbedUrl(''), '');
+
+  const fromId = generateYouTubePlayerEmbedUrl('7aijN13K2nI', true);
+  assert.equal(
+    fromId,
+    'https://www.youtube.com/embed/7aijN13K2nI?autoplay=1&mute=1&enablejsapi=1&rel=0'
+  );
+
+  const fromWatchUrl = generateYouTubePlayerEmbedUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ', false);
+  assert.equal(
+    fromWatchUrl,
+    'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=0&enablejsapi=1&rel=0'
+  );
+
+  const fromShortUrl = generateYouTubePlayerEmbedUrl('https://youtu.be/dQw4w9WgXcQ', true);
+  assert.equal(
+    fromShortUrl,
+    'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1&enablejsapi=1&rel=0'
+  );
+});
+
+test('generateKickPlayerEmbedUrl generates kick player with clean channel and mute state', () => {
+  assert.equal(generateKickPlayerEmbedUrl(''), '');
+
+  const kickMuted = generateKickPlayerEmbedUrl('zannito21', true);
+  assert.equal(kickMuted, 'https://player.kick.com/zannito21?autoplay=true&muted=true');
+
+  const kickUnmuted = generateKickPlayerEmbedUrl('https://kick.com/zannito21', false);
+  assert.equal(kickUnmuted, 'https://player.kick.com/zannito21?autoplay=true&muted=false');
+
+  const kickWithAt = generateKickPlayerEmbedUrl('@zannito21', true);
+  assert.equal(kickWithAt, 'https://player.kick.com/zannito21?autoplay=true&muted=true');
+});
+
+test('generateFacebookPlayerEmbedUrl generates plugin video iframe URL with mute flag', () => {
+  assert.equal(generateFacebookPlayerEmbedUrl(''), '');
+
+  const fbMuted = generateFacebookPlayerEmbedUrl('mygamingchannel', true);
+  assert.ok(fbMuted.startsWith('https://www.facebook.com/plugins/video.php?href='));
+  assert.ok(fbMuted.includes('mute=1'));
+  assert.ok(fbMuted.includes('facebook.com%2Fmygamingchannel%2Flive'));
+
+  const fbUnmuted = generateFacebookPlayerEmbedUrl('https://www.facebook.com/mygamingchannel/live', false);
+  assert.ok(fbUnmuted.includes('mute=0'));
+});
+
+test('generateTikTokPlayerEmbedUrl formats handles and preserves direct URLs', () => {
+  assert.equal(generateTikTokPlayerEmbedUrl(''), '');
+  assert.equal(generateTikTokPlayerEmbedUrl('@zannito'), 'https://www.tiktok.com/@zannito/live');
+  assert.equal(generateTikTokPlayerEmbedUrl('zannito'), 'https://www.tiktok.com/@zannito/live');
+  assert.equal(
+    generateTikTokPlayerEmbedUrl('https://www.tiktok.com/@zannito/live'),
+    'https://www.tiktok.com/@zannito/live'
+  );
 });

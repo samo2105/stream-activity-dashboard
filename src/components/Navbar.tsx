@@ -9,9 +9,11 @@ import {
   Radio,
   Monitor,
   Moon,
-  Sun
+  Sun,
+  Layers,
+  Video
 } from 'lucide-react';
-import { GridColumns, ChannelsConfig, ThemeMode } from '../types/widget';
+import { GridColumns, ChannelsConfig, ThemeMode, ActiveView } from '../types/widget';
 
 interface NavbarProps {
   columns: GridColumns;
@@ -24,6 +26,9 @@ interface NavbarProps {
   totalWidgets: number;
   themeMode: ThemeMode;
   onThemeChange: (theme: ThemeMode) => void;
+  activeView: ActiveView;
+  onViewChange: (view: ActiveView) => void;
+  livePlatformsCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -37,6 +42,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   totalWidgets,
   themeMode,
   onThemeChange,
+  activeView,
+  onViewChange,
+  livePlatformsCount = 0,
 }) => {
   const isLight = themeMode === 'light';
   const isDark = themeMode === 'dark';
@@ -50,69 +58,136 @@ export const Navbar: React.FC<NavbarProps> = ({
         : 'bg-zinc-950/85 border-zinc-800 text-zinc-100'
     }`}>
       <div className="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-3">
-        {/* Logo & Live Status */}
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-600/20">
-            <Tv2 className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className={`font-bold text-base tracking-tight flex items-center gap-1.5 ${isLight ? 'text-zinc-900' : 'text-white'}`}>
-                StreamPulse
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Live Hub
-                </span>
-              </h1>
+        {/* Logo & View Switcher */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-600/20">
+              <Tv2 className="w-5 h-5 text-white" />
             </div>
-            <p className={`text-xs hidden sm:block ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>
-              Actividad, alertas y chats multiplataforma
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className={`font-bold text-base tracking-tight flex items-center gap-1.5 ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                  StreamPulse
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Live Hub
+                  </span>
+                </h1>
+              </div>
+              <p className={`text-xs hidden lg:block ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                Actividad, alertas y chats multiplataforma
+              </p>
+            </div>
+          </div>
+
+          {/* Segmented Control: Dashboard vs Live Previews Studio */}
+          <div className={`flex items-center rounded-xl p-0.5 border text-xs font-medium shadow-inner ${
+            isLight ? 'bg-zinc-100/90 border-zinc-200' : isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-900 border-zinc-800'
+          }`}>
+            <button
+              type="button"
+              onClick={() => onViewChange('dashboard')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                activeView === 'dashboard'
+                  ? isLight
+                    ? 'bg-white text-purple-700 shadow-sm font-semibold'
+                    : 'bg-purple-600 text-white shadow-sm font-semibold'
+                  : isLight
+                  ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+              }`}
+              title="Ver cuadrícula de widgets y chats"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Widgets</span>
+              {totalWidgets > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  activeView === 'dashboard'
+                    ? isLight ? 'bg-purple-100 text-purple-700 font-bold' : 'bg-purple-800/80 text-purple-200 font-bold'
+                    : isLight ? 'bg-zinc-200 text-zinc-600' : 'bg-zinc-800 text-zinc-400'
+                }`}>
+                  {totalWidgets}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onViewChange('previews')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                activeView === 'previews'
+                  ? isLight
+                    ? 'bg-white text-purple-700 shadow-sm font-semibold'
+                    : 'bg-purple-600 text-white shadow-sm font-semibold'
+                  : isLight
+                  ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+              }`}
+              title="Ver reproductores en vivo y configurar transmisiones"
+            >
+              <Video className="w-3.5 h-3.5" />
+              <span>Live Studio</span>
+              {livePlatformsCount > 0 ? (
+                <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px] animate-pulse border border-emerald-500/30">
+                  🔴 {livePlatformsCount} Live
+                </span>
+              ) : (
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  isLight ? 'bg-zinc-200 text-zinc-600' : 'bg-zinc-800 text-zinc-400'
+                }`}>
+                  Previews
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
         {/* Center / Layout & Theme Controls */}
         <div className="flex items-center gap-2">
-          {/* Columns selector */}
-          <div className={`flex items-center border rounded-lg p-1 text-xs ${
-            isLight ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-900 border-zinc-800'
-          }`}>
-            <span className={`px-2 flex items-center gap-1 hidden md:flex ${isLight ? 'text-zinc-500' : 'text-zinc-500'}`}>
-              <Columns className="w-3.5 h-3.5" />
-              Columnas:
-            </span>
-            {([1, 2, 3, 4] as GridColumns[]).map((col) => (
-              <button
-                key={col}
-                type="button"
-                onClick={() => onColumnsChange(col)}
-                className={`px-2.5 py-1 rounded font-medium transition-all ${
-                  columns === col
-                    ? 'bg-purple-600 text-white shadow'
-                    : isLight
-                    ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-                }`}
-                title={`Ver en ${col} columna${col > 1 ? 's' : ''}`}
-              >
-                {col}
-              </button>
-            ))}
-          </div>
+          {/* Columns selector (visible in dashboard view) */}
+          {activeView === 'dashboard' && (
+            <div className={`flex items-center border rounded-lg p-1 text-xs ${
+              isLight ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-900 border-zinc-800'
+            }`}>
+              <span className={`px-2 flex items-center gap-1 hidden md:flex ${isLight ? 'text-zinc-500' : 'text-zinc-500'}`}>
+                <Columns className="w-3.5 h-3.5" />
+                Columnas:
+              </span>
+              {([1, 2, 3, 4] as GridColumns[]).map((col) => (
+                <button
+                  key={col}
+                  type="button"
+                  onClick={() => onColumnsChange(col)}
+                  className={`px-2.5 py-1 rounded font-medium transition-all ${
+                    columns === col
+                      ? 'bg-purple-600 text-white shadow'
+                      : isLight
+                      ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200'
+                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                  }`}
+                  title={`Ver en ${col} columna${col > 1 ? 's' : ''}`}
+                >
+                  {col}
+                </button>
+              ))}
+            </div>
+          )}
 
-          {/* Quick Presets button */}
-          <button
-            type="button"
-            onClick={onOpenPresetsModal}
-            className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
-              isLight
-                ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-zinc-900 border-zinc-200'
-                : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            Plantillas
-          </button>
+          {/* Quick Presets button (visible in dashboard view) */}
+          {activeView === 'dashboard' && (
+            <button
+              type="button"
+              onClick={onOpenPresetsModal}
+              className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
+                isLight
+                  ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-zinc-900 border-zinc-200'
+                  : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border-zinc-800'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              Plantillas
+            </button>
+          )}
 
           {/* 3-Way Theme Selector: Normal (por defecto) | Oscuro | Claro */}
           <div className={`flex items-center border rounded-lg p-0.5 text-xs ${
@@ -182,24 +257,39 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Radio className="w-3.5 h-3.5 text-purple-400" />
             <span className={`hidden md:inline font-normal ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>Canal:</span>
             <span className={`font-medium truncate max-w-[120px] ${isLight ? 'text-purple-700' : 'text-purple-300'}`}>
-              {channels.youtubeHandle ? `@${channels.youtubeHandle.replace(/^@/, '')}` : channels.twitch || channels.kick || channels.facebook || 'Mis Canales'}
+              {channels.youtubeHandle ? `@${channels.youtubeHandle.replace(/^@/, '')}` : channels.twitch || channels.kick || channels.tiktok || channels.facebook || 'Mis Canales'}
             </span>
           </button>
 
-          {/* Add Widget Button */}
-          <button
-            type="button"
-            onClick={onOpenAddModal}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white rounded-lg shadow-md shadow-purple-600/20 transition-all active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Añadir Widget</span>
-            {totalWidgets > 0 && (
-              <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-purple-800/80 text-[10px]">
-                {totalWidgets}
-              </span>
-            )}
-          </button>
+          {/* Add Widget Button (when in dashboard) */}
+          {activeView === 'dashboard' ? (
+            <button
+              type="button"
+              onClick={onOpenAddModal}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white rounded-lg shadow-md shadow-purple-600/20 transition-all active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Añadir Widget</span>
+              {totalWidgets > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-purple-800/80 text-[10px]">
+                  {totalWidgets}
+                </span>
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onViewChange('dashboard')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
+                isLight 
+                  ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border-zinc-200' 
+                  : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-800'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-purple-400" />
+              <span className="hidden sm:inline">Ir a Widgets</span>
+            </button>
+          )}
 
           {/* Settings / Backup */}
           <button
