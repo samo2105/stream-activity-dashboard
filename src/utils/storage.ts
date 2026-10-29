@@ -17,6 +17,7 @@ export const DEFAULT_CONFIG: DashboardConfig = {
     youtube: '7aijN13K2nI',
     youtubeHandle: 'zannito',
     streamlabsToken: DEFAULT_STREAMLABS_TOKEN,
+    deductKickSelfView: true,
   },
   widgets: INITIAL_DEFAULT_WIDGETS,
 };
@@ -42,6 +43,7 @@ export function loadDashboardConfig(): DashboardConfig {
             youtube: parsedLegacy.channels?.youtube === 'SwjSwFWmxl0' || !parsedLegacy.channels?.youtube ? '7aijN13K2nI' : parsedLegacy.channels.youtube,
             youtubeHandle: parsedLegacy.channels?.youtubeHandle || 'zannito',
             streamlabsToken: parsedLegacy.channels?.streamlabsToken || DEFAULT_STREAMLABS_TOKEN,
+            deductKickSelfView: parsedLegacy.channels?.deductKickSelfView ?? true,
           },
           widgets: DEFAULT_CONFIG.widgets,
         };
@@ -65,6 +67,7 @@ export function loadDashboardConfig(): DashboardConfig {
         youtubeHandle: parsed.channels?.youtubeHandle || 'zannito',
         youtubeApiKey: parsed.channels?.youtubeApiKey || undefined,
         streamlabsToken: resolvedToken,
+        deductKickSelfView: parsed.channels?.deductKickSelfView ?? true,
       },
       widgets: Array.isArray(parsed.widgets) 
         ? parsed.widgets.map((w: WidgetItem) => {

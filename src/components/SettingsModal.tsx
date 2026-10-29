@@ -34,7 +34,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
-  const [channels, setChannels] = useState<ChannelsConfig>(config.channels || { twitch: '', kick: '', youtube: '' });
+  const [channels, setChannels] = useState<ChannelsConfig>({
+    twitch: config.channels?.twitch || '',
+    kick: config.channels?.kick || '',
+    youtube: config.channels?.youtube || '',
+    youtubeHandle: config.channels?.youtubeHandle,
+    youtubeApiKey: config.channels?.youtubeApiKey,
+    streamlabsToken: config.channels?.streamlabsToken,
+    deductKickSelfView: config.channels?.deductKickSelfView ?? true,
+  });
 
   if (!isOpen) return null;
 
@@ -140,6 +148,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onChange={(e) => setChannels({ ...channels, kick: e.target.value })}
                   className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-green-500"
                 />
+                <div 
+                  className="flex items-start gap-2 pt-2 cursor-pointer select-none"
+                  onClick={() => setChannels({ ...channels, deductKickSelfView: !(channels.deductKickSelfView ?? true) })}
+                >
+                  <input
+                    type="checkbox"
+                    id="settingsDeductKickSelfViewCheck"
+                    checked={channels.deductKickSelfView ?? true}
+                    onChange={(e) => setChannels({ ...channels, deductKickSelfView: e.target.checked })}
+                    className="w-3.5 h-3.5 mt-0.5 rounded text-green-600 focus:ring-green-500 border-zinc-700 bg-zinc-900 shrink-0"
+                  />
+                  <div>
+                    <label htmlFor="settingsDeductKickSelfViewCheck" className="text-[11px] text-zinc-300 cursor-pointer">
+                      Descontar espectador propio en Kick (-1)
+                    </label>
+                    <p className="text-[10px] text-zinc-500 leading-tight">
+                      Kick suma automáticamente tu propia vista previa o dock en OBS. Activa esta opción para descontarla.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div>

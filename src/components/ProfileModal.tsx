@@ -22,6 +22,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [youtubeApiKey, setYoutubeApiKey] = useState<string>(channels.youtubeApiKey || '');
   const [twitchChannel, setTwitchChannel] = useState<string>(channels.twitch || '');
   const [kickChannel, setKickChannel] = useState<string>(channels.kick || '');
+  const [deductKickSelfView, setDeductKickSelfView] = useState<boolean>(channels.deductKickSelfView ?? true);
   const [streamlabsToken, setStreamlabsToken] = useState<string>(channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN);
   const [updateExistingWidgets, setUpdateExistingWidgets] = useState<boolean>(true);
   const [isScanning, setIsScanning] = useState<boolean>(false);
@@ -33,6 +34,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     setYoutubeApiKey(channels.youtubeApiKey || '');
     setTwitchChannel(channels.twitch || '');
     setKickChannel(channels.kick || '');
+    setDeductKickSelfView(channels.deductKickSelfView ?? true);
     setStreamlabsToken(channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN);
     setScanMessage(null);
   }, [channels, isOpen]);
@@ -139,6 +141,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         youtubeApiKey: cleanApiKey || undefined,
         twitch: cleanTwitch,
         kick: cleanKick,
+        deductKickSelfView,
         streamlabsToken: cleanStreamlabs || DEFAULT_STREAMLABS_TOKEN,
       },
       updateExistingWidgets
@@ -262,7 +265,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           </div>
 
           {/* Kick Section */}
-          <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 space-y-2">
+          <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 space-y-3">
             <label className="text-xs font-bold text-green-300 flex items-center gap-1.5 uppercase tracking-wider">
               <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
               Canal de Kick
@@ -274,6 +277,26 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               onChange={(e) => setKickChannel(e.target.value)}
               className="w-full px-3 py-1.5 bg-zinc-950 border border-green-500/30 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-green-400"
             />
+            <div 
+              className="flex items-start gap-2.5 pt-1 cursor-pointer select-none"
+              onClick={() => setDeductKickSelfView(!deductKickSelfView)}
+            >
+              <input
+                type="checkbox"
+                id="deductKickSelfViewCheck"
+                checked={deductKickSelfView}
+                onChange={(e) => setDeductKickSelfView(e.target.checked)}
+                className="w-4 h-4 mt-0.5 rounded text-green-600 focus:ring-green-500 border-zinc-700 bg-zinc-900 shrink-0"
+              />
+              <div>
+                <label htmlFor="deductKickSelfViewCheck" className="text-xs font-medium text-zinc-200 cursor-pointer">
+                  Descontar espectador propio en Kick (-1)
+                </label>
+                <p className="text-[10px] text-zinc-400 leading-tight mt-0.5">
+                  Kick suma automáticamente la vista de tu propio panel/OBS como espectador. Actívalo para ver solo audiencia orgánica real.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Streamlabs Section */}

@@ -36,6 +36,7 @@ export interface ChannelsConfig {
   youtubeHandle?: string;
   youtubeApiKey?: string;
   streamlabsToken?: string;
+  deductKickSelfView?: boolean;
 }
 
 export interface PlatformViewerData {
@@ -45,6 +46,7 @@ export interface PlatformViewerData {
   loading: boolean;
   error?: string;
   videoId?: string;
+  rawViewers?: number;
 }
 
 export interface ViewerStats {

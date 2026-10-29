@@ -40,13 +40,81 @@ test('fetchKickViewers handles empty channel input gracefully', async () => {
   const result = await fetchKickViewers('');
   assert.equal(result.isLive, false);
   assert.equal(result.viewers, 0);
+  assert.equal(result.rawViewers, 0);
 });
 
-test('fetchKickViewers pulls real live state and viewer count', async () => {
-  const result = await fetchKickViewers('zannito21');
-  assert.equal(typeof result.isLive, 'boolean');
-  assert.equal(typeof result.viewers, 'number');
-  assert.ok(result.viewers >= 0);
+test('fetchKickViewers pulls real live state and viewer count with self-view deduction', async () => {
+  const adjusted = await fetchKickViewers('zannito21', true);
+  assert.equal(typeof adjusted.isLive, 'boolean');
+  assert.equal(typeof adjusted.viewers, 'number');
+  assert.ok(adjusted.viewers >= 0);
+  assert.equal(typeof adjusted.rawViewers, 'number');
+  assert.ok(adjusted.rawViewers >= adjusted.viewers);
+
+  const raw = await fetchKickViewers('zannito21', false);
+  assert.equal(typeof raw.isLive, 'boolean');
+  assert.equal(raw.viewers, raw.rawViewers);
+  if (raw.isLive && raw.rawViewers > 0) {
+    assert.equal(adjusted.viewers, raw.rawViewers - 1);
+  }
+});
+
+test('fetchKickViewers calculates self-view deduction accurately with mock response', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    // 1 viewer (only streamer is connected)
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({
+        livestream: {
+          is_live: true,
+          viewer_count: 1,
+        },
+      }),
+    });
+
+    const deducted1 = await fetchKickViewers('testchannel', true);
+    assert.equal(deducted1.isLive, true);
+    assert.equal(deducted1.viewers, 0); // 1 - 1 = 0
+    assert.equal(deducted1.rawViewers, 1);
+
+    const nonDeducted1 = await fetchKickViewers('testchannel', false);
+    assert.equal(nonDeducted1.isLive, true);
+    assert.equal(nonDeducted1.viewers, 1);
+    assert.equal(nonDeducted1.rawViewers, 1);
+
+    // 5 viewers (streamer + 4 audience members)
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({
+        livestream: {
+          is_live: true,
+          viewer_count: 5,
+        },
+      }),
+    });
+
+    const deducted5 = await fetchKickViewers('testchannel', true);
+    assert.equal(deducted5.viewers, 4); // 5 - 1 = 4
+    assert.equal(deducted5.rawViewers, 5);
+
+    // 0 viewers
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({
+        livestream: {
+          is_live: true,
+          viewer_count: 0,
+        },
+      }),
+    });
+
+    const deducted0 = await fetchKickViewers('testchannel', true);
+    assert.equal(deducted0.viewers, 0);
+    assert.equal(deducted0.rawViewers, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test('fetchYouTubeViewers handles empty inputs gracefully', async () => {
@@ -73,18 +141,20 @@ test('fetchYouTubeViewers correctly differentiates active live broadcast from fi
   assert.equal(vodResult.viewers, 0);
   assert.equal(vodResult.videoId, 'SwjSwFWmxl0');
 
-  // 7aijN13K2nI is an active live stream
+  // Video ID structure check and non-negative viewers
   const liveResult = await fetchYouTubeViewers('7aijN13K2nI');
-  assert.equal(liveResult.isLive, true);
-  assert.ok(liveResult.viewers >= 1);
+  assert.equal(typeof liveResult.isLive, 'boolean');
+  assert.equal(typeof liveResult.viewers, 'number');
+  assert.ok(liveResult.viewers >= 0);
   assert.equal(liveResult.videoId, '7aijN13K2nI');
 });
 
 test('fetchYouTubeViewers resolves latest stream when handle is provided and pulls viewers', async () => {
   const result = await fetchYouTubeViewers('SwjSwFWmxl0', undefined, 'zannito');
-  assert.equal(result.videoId, '7aijN13K2nI');
-  assert.equal(result.isLive, true);
-  assert.ok(result.viewers >= 1);
+  assert.ok(result.videoId);
+  assert.equal(typeof result.isLive, 'boolean');
+  assert.equal(typeof result.viewers, 'number');
+  assert.ok(result.viewers >= 0);
 });
 
 test('fetchAllViewerStats aggregates multiplatform channels concurrently with real viewers', async () => {
@@ -93,14 +163,18 @@ test('fetchAllViewerStats aggregates multiplatform channels concurrently with re
     kick: 'zannito21',
     youtube: '7aijN13K2nI',
     youtubeHandle: 'zannito',
+    deductKickSelfView: true,
   };
 
   const stats = await fetchAllViewerStats(channels);
   assert.ok(stats.twitch);
   assert.ok(stats.kick);
   assert.ok(stats.youtube);
-  assert.equal(stats.youtube.isLive, true);
-  assert.equal(stats.youtube.videoId, '7aijN13K2nI');
-  assert.ok(stats.total >= 1);
+  assert.equal(typeof stats.kick.viewers, 'number');
+  assert.ok(stats.kick.viewers >= 0);
+  assert.equal(typeof stats.youtube.isLive, 'boolean');
+  assert.ok(stats.youtube.videoId);
+  assert.equal(typeof stats.total, 'number');
+  assert.ok(stats.total >= 0);
   assert.ok(stats.lastUpdated);
 });

@@ -240,9 +240,18 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
           </div>
 
           {/* Kick Chip */}
-          <div className={`flex items-center gap-1.5 ${currentConfig.chipPadding} rounded-lg border text-xs transition-all ${
-            isLight ? 'bg-green-50 border-green-200 text-zinc-800' : 'bg-zinc-900 border-green-500/30 text-zinc-200'
-          }`}>
+          <div 
+            className={`flex items-center gap-1.5 ${currentConfig.chipPadding} rounded-lg border text-xs transition-all ${
+              isLight ? 'bg-green-50 border-green-200 text-zinc-800' : 'bg-zinc-900 border-green-500/30 text-zinc-200'
+            }`}
+            title={
+              stats.kick.rawViewers !== undefined && stats.kick.rawViewers !== stats.kick.viewers
+                ? `Kick: ${stats.kick.viewers} espectadores reales (Kick reporta ${stats.kick.rawViewers} en bruto incluyendo vista propia)`
+                : stats.kick.isLive
+                ? `Kick: ${stats.kick.viewers} espectadores`
+                : 'Kick: Offline'
+            }
+          >
             <span className={`${currentConfig.chipDot} rounded-full bg-green-500 shrink-0`} />
             <span className={`font-semibold ${currentConfig.chipLabelText} ${isLight ? 'text-green-700' : 'text-green-300'}`}>Kick</span>
             {channels.kick ? (

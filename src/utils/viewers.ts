@@ -83,11 +83,15 @@ export async function fetchTwitchViewers(channel: string): Promise<{ viewers: nu
 
 /**
  * Fetches Kick stream status and real concurrent viewer count using Kick's public API v2.
+ * Adjusts for Kick's automatic self-view counting by deducting the broadcaster's own session (viewer_count - 1).
  */
-export async function fetchKickViewers(channel: string): Promise<{ viewers: number; isLive: boolean; error?: string }> {
+export async function fetchKickViewers(
+  channel: string,
+  deductSelfView: boolean = true
+): Promise<{ viewers: number; isLive: boolean; rawViewers?: number; error?: string }> {
   const clean = cleanChannelName(channel);
   if (!clean) {
-    return { viewers: 0, isLive: false };
+    return { viewers: 0, isLive: false, rawViewers: 0 };
   }
 
   const primary = clean.toLowerCase();
@@ -106,8 +110,13 @@ export async function fetchKickViewers(channel: string): Promise<{ viewers: numb
       if (res.ok) {
         const data = await res.json();
         if (data?.livestream?.is_live) {
+          const raw = Number(data.livestream.viewer_count) || 0;
+          // Kick automatically counts the streamer's own session / creator studio / embed as +1 viewer.
+          // When deductSelfView is true, we subtract 1, ensuring it never goes below 0.
+          const adjusted = deductSelfView ? Math.max(0, raw - 1) : raw;
           return {
-            viewers: Number(data.livestream.viewer_count) || 0,
+            viewers: adjusted,
+            rawViewers: raw,
             isLive: true,
           };
         }
@@ -117,7 +126,7 @@ export async function fetchKickViewers(channel: string): Promise<{ viewers: numb
     }
   }
 
-  return { viewers: 0, isLive: false };
+  return { viewers: 0, isLive: false, rawViewers: 0 };
 }
 
 /**
@@ -240,13 +249,14 @@ export async function fetchYouTubeViewers(
  * Fetches viewer counts and live states across all configured platforms concurrently.
  */
 export async function fetchAllViewerStats(channels: ChannelsConfig): Promise<ViewerStats> {
-  type FetchRes = { viewers: number; isLive: boolean; error?: string; videoId?: string };
+  type FetchRes = { viewers: number; isLive: boolean; error?: string; videoId?: string; rawViewers?: number };
+  const deductKick = channels.deductKickSelfView ?? true;
   const [twitchRes, kickRes, ytRes] = await Promise.all([
     channels.twitch 
       ? fetchTwitchViewers(channels.twitch) 
       : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
     channels.kick 
-      ? fetchKickViewers(channels.kick) 
+      ? fetchKickViewers(channels.kick, deductKick) 
       : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
     channels.youtube || channels.youtubeHandle
       ? fetchYouTubeViewers(channels.youtube, channels.youtubeApiKey, channels.youtubeHandle)
@@ -268,6 +278,7 @@ export async function fetchAllViewerStats(channels: ChannelsConfig): Promise<Vie
     kick: {
       channel: channels.kick,
       viewers: kickRes.viewers,
+      rawViewers: kickRes.rawViewers,
       isLive: kickRes.isLive,
       loading: false,
       error: kickRes.error,
