@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { WidgetItem, WidgetPlatform, ChannelsConfig, ThemeMode } from '../types/widget';
 import { PLATFORM_PRESETS, DEFAULT_STREAMLABS_TOKEN } from '../utils/presets';
-import { extractCleanUrl, validateWidgetUrl, generateFacebookEmbedUrl } from '../utils/urlHelper';
+import { extractCleanUrl, validateWidgetUrl, generateFacebookEmbedUrl, generateTikTokEmbedUrl } from '../utils/urlHelper';
 
 interface AddWidgetModalProps {
   isOpen: boolean;
@@ -42,6 +42,8 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   const [youtubeVideoId, setYoutubeVideoId] = useState<string>('');
   const [facebookInput, setFacebookInput] = useState<string>('');
   const [facebookMode, setFacebookMode] = useState<'player' | 'chat'>('player');
+  const [tiktokInput, setTiktokInput] = useState<string>('');
+  const [tiktokMode, setTiktokMode] = useState<'player' | 'chat'>('player');
   const [streamlabsWidgetType, setStreamlabsWidgetType] = useState<'eventlist' | 'chatbox' | 'alertbox'>('eventlist');
   const [streamlabsToken, setStreamlabsToken] = useState<string>('');
 
@@ -76,6 +78,17 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
       setUrl(generated);
       const cleanName = fbTarget.replace(/^https?:\/\/(www\.)?facebook\.com\/?/i, '').replace(/\/.*$/, '') || 'Live';
       setTitle(facebookMode === 'player' ? `Facebook Live Player (${cleanName})` : `Facebook Chat (${cleanName})`);
+    } else if (targetPlatform === 'tiktok') {
+      const ttTarget = tiktokInput || channels.tiktok || '';
+      setTiktokInput(ttTarget);
+      const generated = generateTikTokEmbedUrl(ttTarget, tiktokMode);
+      setUrl(generated);
+      const cleanName = ttTarget
+        .replace(/^https?:\/\/(www\.)?tiktok\.com\/@?/i, '')
+        .replace(/\/live\/?.*$/i, '')
+        .replace(/\/.*$/i, '')
+        .replace(/^@+/, '') || 'Live';
+      setTitle(tiktokMode === 'player' ? `TikTok LIVE Player (@${cleanName})` : `TikTok Live Chat (@${cleanName})`);
     } else if (targetPlatform === 'streamlabs' || targetPlatform === 'eventlist' || targetPlatform === 'chatbox') {
       setStreamlabsToken(effectiveToken);
 
@@ -122,6 +135,22 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
           ytId = editingWidget.url.split('v=')[1]?.split('&')[0] || '';
         }
         setYoutubeVideoId(ytId || channels.youtube || '');
+      } else if (editingWidget.platform === 'facebook' || editingWidget.url.includes('facebook.com')) {
+        setFacebookInput(channels.facebook || '');
+        if (editingWidget.url.includes('comments')) {
+          setFacebookMode('chat');
+        } else {
+          setFacebookMode('player');
+        }
+      } else if (editingWidget.platform === 'tiktok' || editingWidget.url.includes('tiktok.com')) {
+        const ttMatch = editingWidget.url.match(/tiktok\.com\/@?([a-zA-Z0-9_.-]+)/i);
+        const ttUser = (ttMatch && ttMatch[1]) || channels.tiktok || '';
+        setTiktokInput(ttUser);
+        if (editingWidget.title.toLowerCase().includes('chat')) {
+          setTiktokMode('chat');
+        } else {
+          setTiktokMode('player');
+        }
       } else if (
         editingWidget.platform === 'streamlabs' || 
         editingWidget.platform === 'eventlist' || 
@@ -229,6 +258,21 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
     if (!editingWidget || title.startsWith('Facebook')) {
       const cleanName = inputVal.replace(/^https?:\/\/(www\.)?facebook\.com\/?/i, '').replace(/\/.*$/, '') || 'Live';
       setTitle(mode === 'player' ? `Facebook Live Player (${cleanName})` : `Facebook Chat (${cleanName})`);
+    }
+  };
+
+  const handleGenerateTikTokUrl = (inputVal: string, modeOverride?: 'player' | 'chat') => {
+    setTiktokInput(inputVal);
+    const mode = modeOverride || tiktokMode;
+    const generated = generateTikTokEmbedUrl(inputVal, mode);
+    setUrl(generated);
+    if (!editingWidget || title.startsWith('TikTok')) {
+      const cleanName = inputVal
+        .replace(/^https?:\/\/(www\.)?tiktok\.com\/@?/i, '')
+        .replace(/\/live\/?.*$/i, '')
+        .replace(/\/.*$/i, '')
+        .replace(/^@+/, '') || 'Live';
+      setTitle(mode === 'player' ? `TikTok LIVE Player (@${cleanName})` : `TikTok Live Chat (@${cleanName})`);
     }
   };
 
@@ -505,6 +549,62 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
                   {facebookMode === 'player'
                     ? 'Incrusta el reproductor oficial de video en vivo de Facebook con reproducción automática adaptativa.'
                     : 'Incrusta el plugin de comentarios en directo de Facebook. Para chats unificados sin login, también puedes usar Streamlabs o BotRix.'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {platform === 'tiktok' && (
+            <div className="p-3.5 rounded-xl bg-pink-500/10 border border-pink-500/20 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-pink-300 flex items-center gap-1.5 uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+                  Generador de TikTok LIVE (Modo B):
+                </label>
+                <div className="flex rounded-lg bg-zinc-950 p-0.5 border border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTiktokMode('player');
+                      handleGenerateTikTokUrl(tiktokInput, 'player');
+                    }}
+                    className={`px-2.5 py-1 text-[11px] rounded-md font-medium transition-all ${
+                      tiktokMode === 'player'
+                        ? 'bg-pink-600 text-white shadow'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    Reproductor en Vivo (Live Preview)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTiktokMode('chat');
+                      handleGenerateTikTokUrl(tiktokInput, 'chat');
+                    }}
+                    className={`px-2.5 py-1 text-[11px] rounded-md font-medium transition-all ${
+                      tiktokMode === 'chat'
+                        ? 'bg-pink-600 text-white shadow'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    Chat en Vivo / Overlay
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <input
+                  type="text"
+                  placeholder="ej. @usuario o https://www.tiktok.com/@usuario/live (o URL TikFinity)"
+                  value={tiktokInput}
+                  onChange={(e) => handleGenerateTikTokUrl(e.target.value)}
+                  className="w-full px-3 py-1.5 text-xs bg-zinc-950 border border-pink-500/30 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-pink-400"
+                />
+                <p className="text-[11px] text-zinc-400">
+                  {tiktokMode === 'player'
+                    ? 'Incrusta el reproductor oficial de TikTok LIVE (Live Preview) para previsualizar y monitorear la emisión en directo en tiempo real.'
+                    : 'Incrusta el chat en vivo web de TikTok LIVE (Modo B) o tu enlace de widget de chat de TikFinity/BotRix.'}
                 </p>
               </div>
             </div>

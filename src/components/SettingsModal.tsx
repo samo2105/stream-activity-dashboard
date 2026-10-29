@@ -42,6 +42,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     youtubeApiKey: config.channels?.youtubeApiKey,
     facebook: config.channels?.facebook || '',
     facebookAccessToken: config.channels?.facebookAccessToken,
+    tiktok: config.channels?.tiktok || '',
     streamlabsToken: config.channels?.streamlabsToken,
     deductKickSelfView: config.channels?.deductKickSelfView ?? true,
   });
@@ -208,6 +209,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   value={channels.facebookAccessToken || ''}
                   onChange={(e) => setChannels({ ...channels, facebookAccessToken: e.target.value })}
                   className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-pink-300 mb-1">
+                  Usuario de TikTok Live (Modo B):
+                </label>
+                <input
+                  type="text"
+                  placeholder="ej. @usuario o tu usuario de TikTok"
+                  value={channels.tiktok || ''}
+                  onChange={(e) => setChannels({ ...channels, tiktok: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-pink-500"
                 />
               </div>
 

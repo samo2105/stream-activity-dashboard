@@ -44,6 +44,13 @@ export const HEALTH_SERVICES: ServiceEndpoint[] = [
     url: 'https://video.xx.fbcdn.net/favicon.ico',
     description: 'Evalúa la conexión con la red de entrega de contenido y servidores de Facebook Live.',
   },
+  {
+    id: 'tiktok',
+    name: 'TikTok Live Ingest & CDN',
+    category: 'tiktok',
+    url: 'https://sf16-website-login.neutral.ttwstatic.com/favicon.ico',
+    description: 'Evalúa la conexión con la red perimetral y CDN de TikTok Live.',
+  },
 ];
 
 /**
@@ -220,6 +227,9 @@ export function detectStreamDrops(
   if (previousStats.facebook?.isLive && !currentStats.facebook?.isLive && currentStats.facebook?.channel) {
     alerts.push(`Facebook Live: La transmisión de ${currentStats.facebook.channel} se ha detenido o desconectado.`);
   }
+  if (previousStats.tiktok?.isLive && !currentStats.tiktok?.isLive && currentStats.tiktok?.channel) {
+    alerts.push(`TikTok LIVE: La transmisión de @${currentStats.tiktok.channel.replace(/^@/, '')} se ha detenido o desconectado.`);
+  }
 
   return alerts;
 }
@@ -262,12 +272,18 @@ export function isWidgetStreamActive(
     return !!viewerStats.facebook?.isLive;
   }
 
-  // General widgets (Event List, Chat Box, Streamlabs, StreamElements, Botrix, TikTok, Custom)
+  // TikTok live video / chat
+  if (widgetPlatform === 'tiktok' || widgetUrl.includes('tiktok.com') || widgetUrl.includes('tikfinity')) {
+    return !!viewerStats.tiktok?.isLive;
+  }
+
+  // General widgets (Event List, Chat Box, Streamlabs, StreamElements, Botrix, Custom)
   // Active if ANY configured channel is live
   return (
     !!viewerStats.twitch?.isLive ||
     !!viewerStats.kick?.isLive ||
     !!viewerStats.youtube?.isLive ||
-    !!viewerStats.facebook?.isLive
+    !!viewerStats.facebook?.isLive ||
+    !!viewerStats.tiktok?.isLive
   );
 }

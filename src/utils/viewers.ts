@@ -8,7 +8,7 @@ export function cleanChannelName(input: string): string {
   return input
     .trim()
     .replace(/^@+/, '')
-    .replace(/^https?:\/\/(www\.)?(twitch\.tv|kick\.com|youtube\.com|facebook\.com|fb\.watch|fb\.gg)\/?/i, '')
+    .replace(/^https?:\/\/(www\.)?(twitch\.tv|kick\.com|youtube\.com|facebook\.com|fb\.watch|fb\.gg|tiktok\.com)\/?/i, '')
     .replace(/^@/, '')
     .replace(/\/.*$/, '')
     .trim();
@@ -355,12 +355,76 @@ export async function fetchFacebookViewers(
 }
 
 /**
+ * Fetches TikTok LIVE stream status and real concurrent viewer count.
+ * Queries TikTok's web room API and uses CORS fallback proxy when running in browsers.
+ */
+export async function fetchTikTokViewers(
+  channel: string
+): Promise<{ viewers: number; isLive: boolean; error?: string }> {
+  const clean = cleanChannelName(channel);
+  if (!clean) {
+    return { viewers: 0, isLive: false };
+  }
+
+  const user = clean.toLowerCase();
+  const targetApiUrl = `https://www.tiktok.com/api-live/user/room/?aid=1988&sourceType=54&uniqueId=${encodeURIComponent(user)}`;
+
+  // 1. Primary: Direct fetch
+  try {
+    const res = await fetch(targetApiUrl, {
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+      signal: AbortSignal.timeout(4000),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.statusCode === 0) {
+        const isLive = data.data?.liveRoom?.status === 2 || data.data?.user?.status === 2;
+        const viewers = Number(data.data?.liveRoom?.liveRoomStats?.userCount) || 0;
+        return {
+          viewers: isLive ? viewers : 0,
+          isLive,
+        };
+      } else if (data && data.statusCode === 1988404) {
+        return { viewers: 0, isLive: false };
+      }
+    }
+  } catch {
+    // If direct query fails or triggers CORS in browser, proceed to fallback
+  }
+
+  // 2. Secondary: Fallback via CORS open proxy (for browser execution)
+  try {
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetApiUrl)}`;
+    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(4500) });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.statusCode === 0) {
+        const isLive = data.data?.liveRoom?.status === 2 || data.data?.user?.status === 2;
+        const viewers = Number(data.data?.liveRoom?.liveRoomStats?.userCount) || 0;
+        return {
+          viewers: isLive ? viewers : 0,
+          isLive,
+        };
+      }
+    }
+  } catch {
+    // Ignore fallback errors
+  }
+
+  return { viewers: 0, isLive: false };
+}
+
+/**
  * Fetches viewer counts and live states across all configured platforms concurrently.
  */
 export async function fetchAllViewerStats(channels: ChannelsConfig): Promise<ViewerStats> {
   type FetchRes = { viewers: number; isLive: boolean; error?: string; videoId?: string; rawViewers?: number };
   const deductKick = channels.deductKickSelfView ?? true;
-  const [twitchRes, kickRes, ytRes, fbRes] = await Promise.all([
+  const [twitchRes, kickRes, ytRes, fbRes, tiktokRes] = await Promise.all([
     channels.twitch 
       ? fetchTwitchViewers(channels.twitch) 
       : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
@@ -373,12 +437,16 @@ export async function fetchAllViewerStats(channels: ChannelsConfig): Promise<Vie
     channels.facebook
       ? fetchFacebookViewers(channels.facebook, channels.facebookAccessToken)
       : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
+    channels.tiktok
+      ? fetchTikTokViewers(channels.tiktok)
+      : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
   ]);
 
   const total = (twitchRes.isLive ? twitchRes.viewers : 0) +
                 (kickRes.isLive ? kickRes.viewers : 0) +
                 (ytRes.isLive ? ytRes.viewers : 0) +
-                (fbRes.isLive ? fbRes.viewers : 0);
+                (fbRes.isLive ? fbRes.viewers : 0) +
+                (tiktokRes.isLive ? tiktokRes.viewers : 0);
 
   return {
     twitch: {
@@ -411,6 +479,13 @@ export async function fetchAllViewerStats(channels: ChannelsConfig): Promise<Vie
       loading: false,
       error: fbRes.error,
       videoId: fbRes.videoId,
+    },
+    tiktok: {
+      channel: channels.tiktok || '',
+      viewers: tiktokRes.viewers,
+      isLive: tiktokRes.isLive,
+      loading: false,
+      error: tiktokRes.error,
     },
     total,
     lastUpdated: Date.now(),

@@ -127,6 +127,7 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
     kick: { channel: channels.kick, viewers: 0, isLive: false, loading: true },
     youtube: { channel: channels.youtube, viewers: 0, isLive: false, loading: true },
     facebook: { channel: channels.facebook || '', viewers: 0, isLive: false, loading: true },
+    tiktok: { channel: channels.tiktok || '', viewers: 0, isLive: false, loading: true },
     total: 0,
   });
 
@@ -322,6 +323,38 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
             )}
           </div>
 
+          {/* TikTok Chip */}
+          <div 
+            className={`flex items-center gap-1.5 ${currentConfig.chipPadding} rounded-lg border text-xs transition-all ${
+              isLight ? 'bg-pink-50 border-pink-200 text-zinc-800' : 'bg-zinc-900 border-pink-500/30 text-zinc-200'
+            }`}
+            title={
+              stats.tiktok?.isLive
+                ? `TikTok: ${stats.tiktok.viewers} espectadores en vivo`
+                : 'TikTok: Offline'
+            }
+          >
+            <span className={`${currentConfig.chipDot} rounded-full bg-pink-500 shrink-0`} />
+            <span className={`font-semibold ${currentConfig.chipLabelText} ${isLight ? 'text-pink-600' : 'text-pink-400'}`}>TikTok</span>
+            {channels.tiktok ? (
+              <span className={`flex items-center gap-1 ${currentConfig.chipUserText}`}>
+                <span className="text-zinc-500">
+                  (@{channels.tiktok.replace(/^@/, '')})
+                </span>
+                {stats.tiktok?.isLive ? (
+                  <span className={`flex items-center gap-1 ${currentConfig.chipNumberText} ${isLight ? 'text-pink-600' : 'text-pink-400'}`}>
+                    <Radio className={`${currentConfig.chipRadioIcon} animate-pulse shrink-0`} />
+                    {stats.tiktok.viewers.toLocaleString()}
+                  </span>
+                ) : (
+                  <span className="text-zinc-500">Offline</span>
+                )}
+              </span>
+            ) : (
+              <span className="text-zinc-500 italic text-[10px]">No configurado</span>
+            )}
+          </div>
+
           {/* Stream Connection Health Chip */}
           <button
             type="button"
@@ -443,6 +476,13 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
                 value={editChannels.facebook || ''}
                 onChange={(e) => setEditChannels({ ...editChannels, facebook: e.target.value })}
                 className="w-24 sm:w-28 px-2 py-0.5 bg-zinc-900 border border-blue-500/40 rounded text-xs text-white placeholder-zinc-500 focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Canal TikTok"
+                value={editChannels.tiktok || ''}
+                onChange={(e) => setEditChannels({ ...editChannels, tiktok: e.target.value })}
+                className="w-24 sm:w-28 px-2 py-0.5 bg-zinc-900 border border-pink-500/40 rounded text-xs text-white placeholder-zinc-500 focus:outline-none"
               />
               <button
                 type="submit"

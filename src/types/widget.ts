@@ -39,6 +39,7 @@ export interface ChannelsConfig {
   facebook?: string;
   facebookPageId?: string;
   facebookAccessToken?: string;
+  tiktok?: string;
   streamlabsToken?: string;
   deductKickSelfView?: boolean;
 }
@@ -58,6 +59,7 @@ export interface ViewerStats {
   kick: PlatformViewerData;
   youtube: PlatformViewerData;
   facebook: PlatformViewerData;
+  tiktok: PlatformViewerData;
   total: number;
   lastUpdated?: number;
 }

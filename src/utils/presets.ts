@@ -104,13 +104,13 @@ export const PLATFORM_PRESETS: Record<WidgetPlatform, PlatformPreset> = {
   },
   tiktok: {
     platform: 'tiktok',
-    name: 'TikTok Live (Web Fuente)',
+    name: 'TikTok Live (Reproductor / Chat)',
     badgeBg: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
     badgeText: 'TikTok',
     borderColor: 'border-pink-500/40',
-    placeholderUrl: 'https://tikfinity.zerody.one/widget/...',
-    guideText: 'Utiliza la URL de widget de eventos generada por TikFinity u otra herramienta de navegador para TikTok Live.',
-    defaultTitle: 'TikTok Live Feed',
+    placeholderUrl: 'https://www.tiktok.com/@TU_USUARIO/live o URL TikFinity',
+    guideText: 'Introduce tu usuario de TikTok (ej. @tuusuario) para incrustar el reproductor en vivo (Live Preview) o chat web de TikTok LIVE (Modo B). También admite URLs de widgets de TikFinity/BotRix.',
+    defaultTitle: 'TikTok LIVE Player',
   },
   custom: {
     platform: 'custom',

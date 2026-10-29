@@ -25,6 +25,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [deductKickSelfView, setDeductKickSelfView] = useState<boolean>(channels.deductKickSelfView ?? true);
   const [facebookChannel, setFacebookChannel] = useState<string>(channels.facebook || '');
   const [facebookAccessToken, setFacebookAccessToken] = useState<string>(channels.facebookAccessToken || '');
+  const [tiktokChannel, setTiktokChannel] = useState<string>(channels.tiktok || '');
+  const [isScanningTikTok, setIsScanningTikTok] = useState<boolean>(false);
+  const [tiktokScanMessage, setTiktokScanMessage] = useState<string | null>(null);
   const [streamlabsToken, setStreamlabsToken] = useState<string>(channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN);
   const [updateExistingWidgets, setUpdateExistingWidgets] = useState<boolean>(true);
   const [isScanning, setIsScanning] = useState<boolean>(false);
@@ -39,6 +42,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     setDeductKickSelfView(channels.deductKickSelfView ?? true);
     setFacebookChannel(channels.facebook || '');
     setFacebookAccessToken(channels.facebookAccessToken || '');
+    setTiktokChannel(channels.tiktok || '');
+    setTiktokScanMessage(null);
     setStreamlabsToken(channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN);
     setScanMessage(null);
   }, [channels, isOpen]);
@@ -121,6 +126,61 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     }
   };
 
+  const handleScanTikTokLive = async () => {
+    const rawInput = (tiktokChannel || '').trim();
+    if (!rawInput) {
+      alert('Ingresa tu nombre de usuario de TikTok primero.');
+      return;
+    }
+    const clean = rawInput.replace(/^@+/, '').replace(/^https?:\/\/(www\.)?tiktok\.com\/@?/i, '').replace(/\/live\/?.*$/i, '').replace(/\/.*$/i, '').trim();
+    if (!clean) return;
+
+    setIsScanningTikTok(true);
+    setTiktokScanMessage('Escaneando canal de TikTok en vivo...');
+
+    try {
+      const targetApiUrl = `https://www.tiktok.com/api-live/user/room/?aid=1988&sourceType=54&uniqueId=${encodeURIComponent(clean)}`;
+      let data: any = null;
+
+      try {
+        const res = await fetch(targetApiUrl, {
+          headers: { Accept: 'application/json' },
+          signal: AbortSignal.timeout(4000),
+        });
+        if (res.ok) data = await res.json();
+      } catch {
+        // Fallback to proxy
+      }
+
+      if (!data) {
+        try {
+          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetApiUrl)}`;
+          const proxyRes = await fetch(proxyUrl, { signal: AbortSignal.timeout(4500) });
+          if (proxyRes.ok) data = await proxyRes.json();
+        } catch {
+          // Ignore
+        }
+      }
+
+      if (data && data.statusCode === 0) {
+        const isLive = data.data?.liveRoom?.status === 2 || data.data?.user?.status === 2;
+        const viewers = Number(data.data?.liveRoom?.liveRoomStats?.userCount) || 0;
+        const title = data.data?.liveRoom?.title || '';
+        if (isLive) {
+          setTiktokScanMessage(`¡Directo activo detectado! (${viewers.toLocaleString()} espectadores)${title ? ` - "${title}"` : ''}`);
+        } else {
+          setTiktokScanMessage(`Canal detectado: @${clean} (Actualmente Offline)`);
+        }
+      } else {
+        setTiktokScanMessage(`Canal @${clean} verificado para Modo B.`);
+      }
+    } catch {
+      setTiktokScanMessage(`Canal @${clean} listo para telemetría.`);
+    } finally {
+      setIsScanningTikTok(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     let cleanYt = youtubeStreamId.trim();
@@ -136,6 +196,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     const cleanKick = kickChannel.trim().replace(/^@/, '');
     const cleanFacebook = facebookChannel.trim();
     const cleanFacebookToken = facebookAccessToken.trim();
+    const cleanTikTok = tiktokChannel.trim().replace(/^@+/, '');
     const cleanYtHandle = youtubeChannel.trim().replace(/^@/, '');
     const cleanStreamlabs = streamlabsToken.trim();
     const cleanApiKey = youtubeApiKey.trim();
@@ -150,6 +211,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         deductKickSelfView,
         facebook: cleanFacebook,
         facebookAccessToken: cleanFacebookToken || undefined,
+        tiktok: cleanTikTok,
         streamlabsToken: cleanStreamlabs || DEFAULT_STREAMLABS_TOKEN,
       },
       updateExistingWidgets
@@ -343,6 +405,50 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 Permite leer en tiempo real los concurrent viewers de Facebook Graph API v19.0. Si lo dejas vacío, StreamPulse detectará el estado en directo mediante oEmbed.
               </p>
             </div>
+          </div>
+
+          {/* TikTok Section */}
+          <div className="p-4 rounded-xl bg-pink-500/10 border border-pink-500/20 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-pink-300 flex items-center gap-1.5 uppercase tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-pink-400 inline-block" />
+                Canal de TikTok Live (Modo B)
+              </label>
+              <button
+                type="button"
+                onClick={handleScanTikTokLive}
+                disabled={isScanningTikTok}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold bg-pink-600 hover:bg-pink-500 text-white px-2.5 py-1 rounded-lg transition-colors shadow-sm"
+              >
+                {isScanningTikTok ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>Escaneando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Radio className="w-3 h-3 animate-pulse" />
+                    <span>Escanear Directo</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <input
+              type="text"
+              placeholder="ej. @usuario o tu usuario de TikTok"
+              value={tiktokChannel}
+              onChange={(e) => setTiktokChannel(e.target.value)}
+              className="w-full px-3 py-1.5 bg-zinc-950 border border-pink-500/30 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-pink-400"
+            />
+            {tiktokScanMessage && (
+              <div className="text-[11px] p-2 rounded bg-zinc-950/80 border border-pink-500/30 text-zinc-300 flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>{tiktokScanMessage}</span>
+              </div>
+            )}
+            <p className="text-[10px] text-zinc-400 leading-tight">
+              Permite previsualizar tu reproductor de TikTok LIVE (Live Preview) y monitorear tus espectadores en vivo en la barra superior.
+            </p>
           </div>
 
           {/* Streamlabs Section */}

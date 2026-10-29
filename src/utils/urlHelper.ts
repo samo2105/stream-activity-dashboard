@@ -69,6 +69,14 @@ export function validateWidgetUrl(url: string): { isValid: boolean; warning?: st
     };
   }
 
+  // TikTok Live Studio / Creator Center mistake
+  if (clean.includes('tiktok.com/live/creator') || clean.includes('tiktok.com/studio') || clean.includes('tiktok.com/creator-center')) {
+    return {
+      isValid: false,
+      warning: 'Has pegado el enlace del TikTok Live Studio o panel de creador. Debes usar la URL pública del stream (ej. https://www.tiktok.com/@usuario/live) o tu widget de TikFinity/BotRix.',
+    };
+  }
+
   return { isValid: true };
 }
 
@@ -200,6 +208,23 @@ export function sanitizeStreamUrl(rawUrl: string, platform: WidgetPlatform): str
     return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fullUrl)}&show_text=false&autoplay=true`;
   }
 
+  // 5. TIKTOK LIVE EMBED & WEB FORMATTING
+  if (platform === 'tiktok' || url.includes('tiktok.com')) {
+    // If it's already a TikFinity or external browser widget URL, keep it
+    if (url.includes('tikfinity') || url.includes('botrix.live')) {
+      return url;
+    }
+
+    let fullUrl = url;
+    // If user provided raw username without protocol
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      const cleanUser = url.replace(/^@/, '');
+      fullUrl = `https://www.tiktok.com/@${cleanUser}/live`;
+    }
+
+    return fullUrl;
+  }
+
   return url;
 }
 
@@ -220,4 +245,30 @@ export function generateFacebookEmbedUrl(input: string, mode: 'player' | 'chat' 
     return `https://www.facebook.com/plugins/comments.php?href=${encodeURIComponent(fullUrl)}&numposts=15&width=100%25`;
   }
   return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fullUrl)}&show_text=false&autoplay=true`;
+}
+
+/**
+ * Generates an iframe-ready embed URL for TikTok LIVE (Modo B direct live stream or third-party chat overlay).
+ */
+export function generateTikTokEmbedUrl(input: string, mode: 'player' | 'chat' = 'player'): string {
+  const clean = extractCleanUrl(input).trim();
+  if (!clean) return '';
+
+  // If user provided a TikFinity or external widget URL, preserve it
+  if (clean.includes('tikfinity') || clean.includes('botrix.live')) {
+    return clean;
+  }
+
+  // Extract clean username
+  const username = clean
+    .replace(/^https?:\/\/(www\.)?tiktok\.com\/@?/i, '')
+    .replace(/\/live\/?.*$/i, '')
+    .replace(/\/.*$/i, '')
+    .replace(/^@+/, '')
+    .trim();
+
+  if (!username) return '';
+
+  const baseLiveUrl = `https://www.tiktok.com/@${username}/live`;
+  return mode === 'chat' ? `${baseLiveUrl}#chat` : baseLiveUrl;
 }

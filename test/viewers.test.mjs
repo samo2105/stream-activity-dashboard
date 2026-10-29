@@ -6,6 +6,7 @@ import {
   fetchKickViewers,
   fetchYouTubeViewers,
   fetchFacebookViewers,
+  fetchTikTokViewers,
   fetchAllViewerStats,
 } from '../src/utils/viewers.ts';
 
@@ -20,6 +21,8 @@ test('cleanChannelName sanitizes channel names from various input formats', () =
   assert.equal(cleanChannelName('https://www.youtube.com/@zannito'), 'zannito');
   assert.equal(cleanChannelName('https://www.facebook.com/zannitotv/live'), 'zannitotv');
   assert.equal(cleanChannelName('https://fb.gg/zannitotv'), 'zannitotv');
+  assert.equal(cleanChannelName('https://www.tiktok.com/@zannitotv/live'), 'zannitotv');
+  assert.equal(cleanChannelName('https://tiktok.com/@zannitotv'), 'zannitotv');
 });
 
 test('fetchTwitchViewers handles empty channel input gracefully', async () => {
@@ -217,6 +220,80 @@ test('fetchFacebookViewers parses live stream viewers via Meta Graph API mock', 
   }
 });
 
+test('fetchTikTokViewers handles empty channel input gracefully', async () => {
+  const result = await fetchTikTokViewers('');
+  assert.equal(result.isLive, false);
+  assert.equal(result.viewers, 0);
+
+  const whitespaceResult = await fetchTikTokViewers('   ');
+  assert.equal(whitespaceResult.isLive, false);
+  assert.equal(whitespaceResult.viewers, 0);
+});
+
+test('fetchTikTokViewers parses liveRoom status and viewerCount accurately with mock response', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    // 1. Live stream active
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({
+        statusCode: 0,
+        data: {
+          user: { status: 2 },
+          liveRoom: {
+            status: 2,
+            title: 'Streaming Chill',
+            liveRoomStats: {
+              userCount: 42,
+            },
+          },
+        },
+      }),
+    });
+
+    const liveRes = await fetchTikTokViewers('testuser');
+    assert.equal(liveRes.isLive, true);
+    assert.equal(liveRes.viewers, 42);
+
+    // 2. Offline stream
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({
+        statusCode: 0,
+        data: {
+          user: { status: 4 },
+          liveRoom: {
+            status: 4,
+            liveRoomStats: {
+              userCount: 0,
+            },
+          },
+        },
+      }),
+    });
+
+    const offlineRes = await fetchTikTokViewers('testuser');
+    assert.equal(offlineRes.isLive, false);
+    assert.equal(offlineRes.viewers, 0);
+
+    // 3. Not found user / 1988404
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({
+        statusCode: 1988404,
+        data: null,
+        message: 'not_found',
+      }),
+    });
+
+    const notFoundRes = await fetchTikTokViewers('nonexistent');
+    assert.equal(notFoundRes.isLive, false);
+    assert.equal(notFoundRes.viewers, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('fetchAllViewerStats aggregates multiplatform channels concurrently with real viewers', async () => {
   const channels = {
     twitch: 'zannito21',
@@ -224,6 +301,7 @@ test('fetchAllViewerStats aggregates multiplatform channels concurrently with re
     youtube: '7aijN13K2nI',
     youtubeHandle: 'zannito',
     facebook: 'https://facebook.com/zannitotv/live',
+    tiktok: 'zannito',
     deductKickSelfView: true,
   };
 
@@ -232,6 +310,7 @@ test('fetchAllViewerStats aggregates multiplatform channels concurrently with re
   assert.ok(stats.kick);
   assert.ok(stats.youtube);
   assert.ok(stats.facebook);
+  assert.ok(stats.tiktok);
   assert.equal(typeof stats.kick.viewers, 'number');
   assert.ok(stats.kick.viewers >= 0);
   assert.equal(typeof stats.youtube.isLive, 'boolean');
@@ -239,6 +318,9 @@ test('fetchAllViewerStats aggregates multiplatform channels concurrently with re
   assert.equal(typeof stats.facebook.viewers, 'number');
   assert.ok(stats.facebook.viewers >= 0);
   assert.equal(typeof stats.facebook.isLive, 'boolean');
+  assert.equal(typeof stats.tiktok.viewers, 'number');
+  assert.ok(stats.tiktok.viewers >= 0);
+  assert.equal(typeof stats.tiktok.isLive, 'boolean');
   assert.equal(typeof stats.total, 'number');
   assert.ok(stats.total >= 0);
   assert.ok(stats.lastUpdated);
