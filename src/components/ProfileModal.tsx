@@ -23,6 +23,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [twitchChannel, setTwitchChannel] = useState<string>(channels.twitch || '');
   const [kickChannel, setKickChannel] = useState<string>(channels.kick || '');
   const [deductKickSelfView, setDeductKickSelfView] = useState<boolean>(channels.deductKickSelfView ?? true);
+  const [facebookChannel, setFacebookChannel] = useState<string>(channels.facebook || '');
+  const [facebookAccessToken, setFacebookAccessToken] = useState<string>(channels.facebookAccessToken || '');
   const [streamlabsToken, setStreamlabsToken] = useState<string>(channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN);
   const [updateExistingWidgets, setUpdateExistingWidgets] = useState<boolean>(true);
   const [isScanning, setIsScanning] = useState<boolean>(false);
@@ -35,6 +37,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     setTwitchChannel(channels.twitch || '');
     setKickChannel(channels.kick || '');
     setDeductKickSelfView(channels.deductKickSelfView ?? true);
+    setFacebookChannel(channels.facebook || '');
+    setFacebookAccessToken(channels.facebookAccessToken || '');
     setStreamlabsToken(channels.streamlabsToken || DEFAULT_STREAMLABS_TOKEN);
     setScanMessage(null);
   }, [channels, isOpen]);
@@ -130,6 +134,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
     const cleanTwitch = twitchChannel.trim().replace(/^@/, '');
     const cleanKick = kickChannel.trim().replace(/^@/, '');
+    const cleanFacebook = facebookChannel.trim();
+    const cleanFacebookToken = facebookAccessToken.trim();
     const cleanYtHandle = youtubeChannel.trim().replace(/^@/, '');
     const cleanStreamlabs = streamlabsToken.trim();
     const cleanApiKey = youtubeApiKey.trim();
@@ -142,6 +148,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         twitch: cleanTwitch,
         kick: cleanKick,
         deductKickSelfView,
+        facebook: cleanFacebook,
+        facebookAccessToken: cleanFacebookToken || undefined,
         streamlabsToken: cleanStreamlabs || DEFAULT_STREAMLABS_TOKEN,
       },
       updateExistingWidgets
@@ -296,6 +304,44 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   Kick suma automáticamente la vista de tu propio panel/OBS como espectador. Actívalo para ver solo audiencia orgánica real.
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* Facebook Section */}
+          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-blue-300 flex items-center gap-1.5 uppercase tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
+                Página / Canal de Facebook Live
+              </label>
+              <span className="text-[10px] text-blue-400/80 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 font-medium">
+                Facebook Gaming
+              </span>
+            </div>
+            <input
+              type="text"
+              placeholder="ej. TuPagina o https://facebook.com/TuPagina/live"
+              value={facebookChannel}
+              onChange={(e) => setFacebookChannel(e.target.value)}
+              className="w-full px-3 py-1.5 bg-zinc-950 border border-blue-500/30 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-400"
+            />
+            <div className="space-y-1 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-medium text-zinc-300">
+                  Page Access Token (Graph API - Opcional):
+                </label>
+                <span className="text-[10px] text-zinc-500">Métricas exactas de viewers</span>
+              </div>
+              <input
+                type="password"
+                placeholder="EAA... (Token de acceso de página o usuario)"
+                value={facebookAccessToken}
+                onChange={(e) => setFacebookAccessToken(e.target.value)}
+                className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-blue-400 font-mono"
+              />
+              <p className="text-[10px] text-zinc-400 leading-tight">
+                Permite leer en tiempo real los concurrent viewers de Facebook Graph API v19.0. Si lo dejas vacío, StreamPulse detectará el estado en directo mediante oEmbed.
+              </p>
             </div>
           </div>
 

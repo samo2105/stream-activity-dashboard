@@ -1,4 +1,4 @@
-import { WidgetPlatform } from '../types/widget';
+import type { WidgetPlatform } from '../types/widget';
 
 /**
  * Extracts a clean URL from user input, even if they pasted an entire <iframe> HTML snippet,
@@ -58,6 +58,14 @@ export function validateWidgetUrl(url: string): { isValid: boolean; warning?: st
     return {
       isValid: false,
       warning: 'Has pegado el panel de StreamElements. Ve a Mis Overlays -> Menú de 3 puntos -> "Copiar URL del Overlay".',
+    };
+  }
+
+  // Facebook Live Producer / Creator Studio mistake
+  if (clean.includes('facebook.com/live/producer') || clean.includes('facebook.com/creatorstudio')) {
+    return {
+      isValid: false,
+      warning: 'Has pegado el enlace del Live Producer o Creator Studio de Facebook. Debes usar la URL pública del stream o página (ej. https://facebook.com/TuPagina/live).',
     };
   }
 
@@ -170,5 +178,46 @@ export function sanitizeStreamUrl(rawUrl: string, platform: WidgetPlatform): str
     return url;
   }
 
+  // 4. FACEBOOK LIVE EMBED FORMATTING
+  if (platform === 'facebook' || url.includes('facebook.com') || url.includes('fb.gg') || url.includes('fb.watch')) {
+    // If it's already an official Facebook plugin iframe URL, preserve it
+    if (url.includes('/plugins/video.php') || url.includes('/plugins/comments.php')) {
+      return url;
+    }
+
+    let fullUrl = url;
+    // If user provided raw username/page without protocol
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      const cleanChan = url.replace(/^@/, '');
+      fullUrl = `https://www.facebook.com/${cleanChan}/live`;
+    }
+
+    // If chat / comments is explicitly intended
+    if (url.includes('/comments') || url.includes('type=comments')) {
+      return `https://www.facebook.com/plugins/comments.php?href=${encodeURIComponent(fullUrl)}&numposts=15&width=100%25`;
+    }
+
+    return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fullUrl)}&show_text=false&autoplay=true`;
+  }
+
   return url;
+}
+
+/**
+ * Generates an iframe-ready embed URL for Facebook Live (either official video player or comments/chat).
+ */
+export function generateFacebookEmbedUrl(input: string, mode: 'player' | 'chat' = 'player'): string {
+  const clean = extractCleanUrl(input).trim();
+  if (!clean) return '';
+
+  let fullUrl = clean;
+  if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+    const cleanChan = clean.replace(/^@/, '');
+    fullUrl = `https://www.facebook.com/${cleanChan}/live`;
+  }
+
+  if (mode === 'chat') {
+    return `https://www.facebook.com/plugins/comments.php?href=${encodeURIComponent(fullUrl)}&numposts=15&width=100%25`;
+  }
+  return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fullUrl)}&show_text=false&autoplay=true`;
 }

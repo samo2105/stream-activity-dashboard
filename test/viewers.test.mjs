@@ -5,6 +5,7 @@ import {
   fetchTwitchViewers,
   fetchKickViewers,
   fetchYouTubeViewers,
+  fetchFacebookViewers,
   fetchAllViewerStats,
 } from '../src/utils/viewers.ts';
 
@@ -17,6 +18,8 @@ test('cleanChannelName sanitizes channel names from various input formats', () =
   assert.equal(cleanChannelName('https://www.twitch.tv/samo2105/chat'), 'samo2105');
   assert.equal(cleanChannelName('https://kick.com/samo2105'), 'samo2105');
   assert.equal(cleanChannelName('https://www.youtube.com/@zannito'), 'zannito');
+  assert.equal(cleanChannelName('https://www.facebook.com/zannitotv/live'), 'zannitotv');
+  assert.equal(cleanChannelName('https://fb.gg/zannitotv'), 'zannitotv');
 });
 
 test('fetchTwitchViewers handles empty channel input gracefully', async () => {
@@ -157,12 +160,70 @@ test('fetchYouTubeViewers resolves latest stream when handle is provided and pul
   assert.ok(result.viewers >= 0);
 });
 
+test('fetchFacebookViewers handles empty inputs gracefully', async () => {
+  const r1 = await fetchFacebookViewers('');
+  assert.equal(r1.isLive, false);
+  assert.equal(r1.viewers, 0);
+
+  const r2 = await fetchFacebookViewers('   ');
+  assert.equal(r2.isLive, false);
+  assert.equal(r2.viewers, 0);
+});
+
+test('fetchFacebookViewers parses live stream viewers via Meta Graph API mock', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    // 1. Live stream with active concurrent viewers
+    globalThis.fetch = async (url) => {
+      if (url.toString().includes('graph.facebook.com')) {
+        return {
+          ok: true,
+          json: async () => ({
+            id: '1234567890',
+            live_views: 74,
+            status: 'LIVE',
+            title: 'Torneo Gaming en Directo',
+          }),
+        };
+      }
+      return { ok: false };
+    };
+
+    const res = await fetchFacebookViewers('https://www.facebook.com/gamingpage/videos/1234567890/', 'valid_test_token');
+    assert.equal(res.isLive, true);
+    assert.equal(res.viewers, 74);
+    assert.equal(res.videoId, '1234567890');
+
+    // 2. Concluded stream (status !== LIVE)
+    globalThis.fetch = async (url) => {
+      if (url.toString().includes('graph.facebook.com')) {
+        return {
+          ok: true,
+          json: async () => ({
+            id: '1234567890',
+            live_views: 0,
+            status: 'VOD_PROCESSING',
+          }),
+        };
+      }
+      return { ok: false };
+    };
+
+    const vodRes = await fetchFacebookViewers('1234567890', 'valid_test_token');
+    assert.equal(vodRes.isLive, false);
+    assert.equal(vodRes.viewers, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('fetchAllViewerStats aggregates multiplatform channels concurrently with real viewers', async () => {
   const channels = {
     twitch: 'zannito21',
     kick: 'zannito21',
     youtube: '7aijN13K2nI',
     youtubeHandle: 'zannito',
+    facebook: 'https://facebook.com/zannitotv/live',
     deductKickSelfView: true,
   };
 
@@ -170,10 +231,14 @@ test('fetchAllViewerStats aggregates multiplatform channels concurrently with re
   assert.ok(stats.twitch);
   assert.ok(stats.kick);
   assert.ok(stats.youtube);
+  assert.ok(stats.facebook);
   assert.equal(typeof stats.kick.viewers, 'number');
   assert.ok(stats.kick.viewers >= 0);
   assert.equal(typeof stats.youtube.isLive, 'boolean');
   assert.ok(stats.youtube.videoId);
+  assert.equal(typeof stats.facebook.viewers, 'number');
+  assert.ok(stats.facebook.viewers >= 0);
+  assert.equal(typeof stats.facebook.isLive, 'boolean');
   assert.equal(typeof stats.total, 'number');
   assert.ok(stats.total >= 0);
   assert.ok(stats.lastUpdated);

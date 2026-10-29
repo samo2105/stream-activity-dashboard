@@ -182,7 +182,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Radio className="w-3.5 h-3.5 text-purple-400" />
             <span className={`hidden md:inline font-normal ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>Canal:</span>
             <span className={`font-medium truncate max-w-[120px] ${isLight ? 'text-purple-700' : 'text-purple-300'}`}>
-              {channels.youtubeHandle ? `@${channels.youtubeHandle.replace(/^@/, '')}` : channels.twitch || 'Mis Canales'}
+              {channels.youtubeHandle ? `@${channels.youtubeHandle.replace(/^@/, '')}` : channels.twitch || channels.kick || channels.facebook || 'Mis Canales'}
             </span>
           </button>
 

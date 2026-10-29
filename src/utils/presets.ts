@@ -82,6 +82,16 @@ export const PLATFORM_PRESETS: Record<WidgetPlatform, PlatformPreset> = {
     guideText: 'Introduce el ID de tu transmisión en vivo de YouTube (el parámetro "v" de la URL del stream).',
     defaultTitle: 'YouTube Live Chat',
   },
+  facebook: {
+    platform: 'facebook',
+    name: 'Facebook Live (Player / Chat)',
+    badgeBg: 'bg-blue-600/20 text-blue-400 border-blue-500/30',
+    badgeText: 'Facebook Live',
+    borderColor: 'border-blue-500/40',
+    placeholderUrl: 'https://www.facebook.com/TU_PAGINA/live o https://www.facebook.com/TU_PAGINA/videos/ID_VIDEO',
+    guideText: 'Introduce la URL de tu transmisión en vivo o video de Facebook. Se incrustará el reproductor oficial o el chat de comentarios de Facebook.',
+    defaultTitle: 'Facebook Live Player',
+  },
   botrix: {
     platform: 'botrix',
     name: 'BotRix (Widgets / Chat Unificado)',

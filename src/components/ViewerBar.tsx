@@ -126,6 +126,7 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
     twitch: { channel: channels.twitch, viewers: 0, isLive: false, loading: true },
     kick: { channel: channels.kick, viewers: 0, isLive: false, loading: true },
     youtube: { channel: channels.youtube, viewers: 0, isLive: false, loading: true },
+    facebook: { channel: channels.facebook || '', viewers: 0, isLive: false, loading: true },
     total: 0,
   });
 
@@ -296,6 +297,31 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
             )}
           </div>
 
+          {/* Facebook Chip */}
+          <div className={`flex items-center gap-1.5 ${currentConfig.chipPadding} rounded-lg border text-xs transition-all ${
+            isLight ? 'bg-blue-50 border-blue-200 text-zinc-800' : 'bg-zinc-900 border-blue-500/30 text-zinc-200'
+          }`}>
+            <span className={`${currentConfig.chipDot} rounded-full bg-blue-600 shrink-0`} />
+            <span className={`font-semibold ${currentConfig.chipLabelText} ${isLight ? 'text-blue-700' : 'text-blue-400'}`}>Facebook</span>
+            {channels.facebook ? (
+              <span className={`flex items-center gap-1 ${currentConfig.chipUserText}`}>
+                <span className="text-zinc-500">
+                  ({channels.facebook.replace(/^https?:\/\/(www\.)?facebook\.com\/?/i, '').replace(/\/.*$/, '')})
+                </span>
+                {stats.facebook?.isLive ? (
+                  <span className={`flex items-center gap-1 ${currentConfig.chipNumberText} ${isLight ? 'text-blue-600' : 'text-blue-400'}`}>
+                    <Radio className={`${currentConfig.chipRadioIcon} animate-pulse shrink-0`} />
+                    {stats.facebook.viewers.toLocaleString()}
+                  </span>
+                ) : (
+                  <span className="text-zinc-500">Offline</span>
+                )}
+              </span>
+            ) : (
+              <span className="text-zinc-500 italic text-[10px]">No configurado</span>
+            )}
+          </div>
+
           {/* Stream Connection Health Chip */}
           <button
             type="button"
@@ -410,6 +436,13 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
                 value={editChannels.youtube}
                 onChange={(e) => setEditChannels({ ...editChannels, youtube: e.target.value })}
                 className="w-24 sm:w-28 px-2 py-0.5 bg-zinc-900 border border-red-500/40 rounded text-xs text-white placeholder-zinc-500 focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Canal Facebook"
+                value={editChannels.facebook || ''}
+                onChange={(e) => setEditChannels({ ...editChannels, facebook: e.target.value })}
+                className="w-24 sm:w-28 px-2 py-0.5 bg-zinc-900 border border-blue-500/40 rounded text-xs text-white placeholder-zinc-500 focus:outline-none"
               />
               <button
                 type="submit"

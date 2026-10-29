@@ -40,6 +40,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     youtube: config.channels?.youtube || '',
     youtubeHandle: config.channels?.youtubeHandle,
     youtubeApiKey: config.channels?.youtubeApiKey,
+    facebook: config.channels?.facebook || '',
+    facebookAccessToken: config.channels?.facebookAccessToken,
     streamlabsToken: config.channels?.streamlabsToken,
     deductKickSelfView: config.channels?.deductKickSelfView ?? true,
   });
@@ -180,6 +182,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   value={channels.youtube}
                   onChange={(e) => setChannels({ ...channels, youtube: e.target.value })}
                   className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-blue-300 mb-1">
+                  Página o Canal de Facebook Live:
+                </label>
+                <input
+                  type="text"
+                  placeholder="ej. TuPagina o https://facebook.com/TuPagina/live"
+                  value={channels.facebook || ''}
+                  onChange={(e) => setChannels({ ...channels, facebook: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-medium text-blue-300 mb-1">
+                  Facebook Page Access Token (Graph API - Opcional):
+                </label>
+                <input
+                  type="password"
+                  placeholder="EAA... (Token de acceso para métricas en vivo)"
+                  value={channels.facebookAccessToken || ''}
+                  onChange={(e) => setChannels({ ...channels, facebookAccessToken: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 font-mono"
                 />
               </div>
 

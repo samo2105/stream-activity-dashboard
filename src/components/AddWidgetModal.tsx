@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { WidgetItem, WidgetPlatform, ChannelsConfig, ThemeMode } from '../types/widget';
 import { PLATFORM_PRESETS, DEFAULT_STREAMLABS_TOKEN } from '../utils/presets';
-import { extractCleanUrl, validateWidgetUrl } from '../utils/urlHelper';
+import { extractCleanUrl, validateWidgetUrl, generateFacebookEmbedUrl } from '../utils/urlHelper';
 
 interface AddWidgetModalProps {
   isOpen: boolean;
@@ -40,6 +40,8 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
   // Quick helper inputs for specific platforms
   const [channelName, setChannelName] = useState<string>('');
   const [youtubeVideoId, setYoutubeVideoId] = useState<string>('');
+  const [facebookInput, setFacebookInput] = useState<string>('');
+  const [facebookMode, setFacebookMode] = useState<'player' | 'chat'>('player');
   const [streamlabsWidgetType, setStreamlabsWidgetType] = useState<'eventlist' | 'chatbox' | 'alertbox'>('eventlist');
   const [streamlabsToken, setStreamlabsToken] = useState<string>('');
 
@@ -67,6 +69,13 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
       setYoutubeVideoId(ytStreamId);
       setTitle(`YouTube Live Chat (${handle})`);
       setUrl(`https://www.youtube.com/live_chat?v=${ytStreamId}&embed_domain=${currentHost}&dark_theme=1`);
+    } else if (targetPlatform === 'facebook') {
+      const fbTarget = facebookInput || channels.facebook || '';
+      setFacebookInput(fbTarget);
+      const generated = generateFacebookEmbedUrl(fbTarget, facebookMode);
+      setUrl(generated);
+      const cleanName = fbTarget.replace(/^https?:\/\/(www\.)?facebook\.com\/?/i, '').replace(/\/.*$/, '') || 'Live';
+      setTitle(facebookMode === 'player' ? `Facebook Live Player (${cleanName})` : `Facebook Chat (${cleanName})`);
     } else if (targetPlatform === 'streamlabs' || targetPlatform === 'eventlist' || targetPlatform === 'chatbox') {
       setStreamlabsToken(effectiveToken);
 
@@ -209,6 +218,17 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
     setUrl(ytUrl);
     if (!editingWidget || title.startsWith('YouTube')) {
       setTitle(id === 'SwjSwFWmxl0' ? 'YouTube Chat (@zannito - Warlock de Abismo)' : `YouTube Chat (${id})`);
+    }
+  };
+
+  const handleGenerateFacebookUrl = (inputVal: string, modeOverride?: 'player' | 'chat') => {
+    setFacebookInput(inputVal);
+    const mode = modeOverride || facebookMode;
+    const generated = generateFacebookEmbedUrl(inputVal, mode);
+    setUrl(generated);
+    if (!editingWidget || title.startsWith('Facebook')) {
+      const cleanName = inputVal.replace(/^https?:\/\/(www\.)?facebook\.com\/?/i, '').replace(/\/.*$/, '') || 'Live';
+      setTitle(mode === 'player' ? `Facebook Live Player (${cleanName})` : `Facebook Chat (${cleanName})`);
     }
   };
 
@@ -431,6 +451,62 @@ export const AddWidgetModal: React.FC<AddWidgetModalProps> = ({
                   ID: SwjSwFWmxl0
                 </span>
               </button>
+            </div>
+          )}
+
+          {platform === 'facebook' && (
+            <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-blue-300 flex items-center gap-1.5 uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                  Generador de Facebook Live:
+                </label>
+                <div className="flex rounded-lg bg-zinc-950 p-0.5 border border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFacebookMode('player');
+                      handleGenerateFacebookUrl(facebookInput, 'player');
+                    }}
+                    className={`px-2.5 py-1 text-[11px] rounded-md font-medium transition-all ${
+                      facebookMode === 'player'
+                        ? 'bg-blue-600 text-white shadow'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    Reproductor Video
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFacebookMode('chat');
+                      handleGenerateFacebookUrl(facebookInput, 'chat');
+                    }}
+                    className={`px-2.5 py-1 text-[11px] rounded-md font-medium transition-all ${
+                      facebookMode === 'chat'
+                        ? 'bg-blue-600 text-white shadow'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    Chat / Comentarios
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <input
+                  type="text"
+                  placeholder="ej. TuPagina o https://facebook.com/TuPagina/live"
+                  value={facebookInput}
+                  onChange={(e) => handleGenerateFacebookUrl(e.target.value)}
+                  className="w-full px-3 py-1.5 text-xs bg-zinc-950 border border-blue-500/30 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-blue-400"
+                />
+                <p className="text-[11px] text-zinc-400">
+                  {facebookMode === 'player'
+                    ? 'Incrusta el reproductor oficial de video en vivo de Facebook con reproducción automática adaptativa.'
+                    : 'Incrusta el plugin de comentarios en directo de Facebook. Para chats unificados sin login, también puedes usar Streamlabs o BotRix.'}
+                </p>
+              </div>
             </div>
           )}
 

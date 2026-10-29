@@ -6,6 +6,7 @@ export type WidgetPlatform =
   | 'twitch'
   | 'kick'
   | 'youtube'
+  | 'facebook'
   | 'botrix'
   | 'tiktok'
   | 'custom';
@@ -35,6 +36,9 @@ export interface ChannelsConfig {
   youtube: string;
   youtubeHandle?: string;
   youtubeApiKey?: string;
+  facebook?: string;
+  facebookPageId?: string;
+  facebookAccessToken?: string;
   streamlabsToken?: string;
   deductKickSelfView?: boolean;
 }
@@ -53,6 +57,7 @@ export interface ViewerStats {
   twitch: PlatformViewerData;
   kick: PlatformViewerData;
   youtube: PlatformViewerData;
+  facebook: PlatformViewerData;
   total: number;
   lastUpdated?: number;
 }

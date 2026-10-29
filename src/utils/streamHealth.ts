@@ -37,6 +37,13 @@ export const HEALTH_SERVICES: ServiceEndpoint[] = [
     url: 'https://cdn.streamlabs.com/static/imgs/streamlabs-logos/favicon/favicon.svg',
     description: 'Comprueba la respuesta con los servidores de eventos y alertas de Streamlabs.',
   },
+  {
+    id: 'facebook',
+    name: 'Facebook Live Ingest & CDN',
+    category: 'facebook',
+    url: 'https://video.xx.fbcdn.net/favicon.ico',
+    description: 'Evalúa la conexión con la red de entrega de contenido y servidores de Facebook Live.',
+  },
 ];
 
 /**
@@ -210,6 +217,9 @@ export function detectStreamDrops(
   if (previousStats.youtube.isLive && !currentStats.youtube.isLive && currentStats.youtube.channel) {
     alerts.push(`YouTube: La transmisión en directo ha finalizado o se ha desconectado.`);
   }
+  if (previousStats.facebook?.isLive && !currentStats.facebook?.isLive && currentStats.facebook?.channel) {
+    alerts.push(`Facebook Live: La transmisión de ${currentStats.facebook.channel} se ha detenido o desconectado.`);
+  }
 
   return alerts;
 }
@@ -247,11 +257,17 @@ export function isWidgetStreamActive(
     return !!viewerStats.youtube?.isLive;
   }
 
+  // Facebook live video / chat
+  if (widgetPlatform === 'facebook' || widgetUrl.includes('facebook.com') || widgetUrl.includes('fb.gg') || widgetUrl.includes('fb.watch')) {
+    return !!viewerStats.facebook?.isLive;
+  }
+
   // General widgets (Event List, Chat Box, Streamlabs, StreamElements, Botrix, TikTok, Custom)
   // Active if ANY configured channel is live
   return (
     !!viewerStats.twitch?.isLive ||
     !!viewerStats.kick?.isLive ||
-    !!viewerStats.youtube?.isLive
+    !!viewerStats.youtube?.isLive ||
+    !!viewerStats.facebook?.isLive
   );
 }

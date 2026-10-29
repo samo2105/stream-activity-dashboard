@@ -11,14 +11,15 @@ import {
   isWidgetStreamActive,
 } from '../src/utils/streamHealth.ts';
 
-test('HEALTH_SERVICES contains all 5 primary streaming endpoints', () => {
-  assert.equal(HEALTH_SERVICES.length, 5);
+test('HEALTH_SERVICES contains all 6 primary streaming endpoints', () => {
+  assert.equal(HEALTH_SERVICES.length, 6);
   const ids = HEALTH_SERVICES.map(s => s.id);
   assert.ok(ids.includes('cloudflare'), 'Missing Cloudflare service');
   assert.ok(ids.includes('youtube'), 'Missing YouTube service');
   assert.ok(ids.includes('twitch'), 'Missing Twitch service');
   assert.ok(ids.includes('kick'), 'Missing Kick service');
   assert.ok(ids.includes('streamlabs'), 'Missing Streamlabs service');
+  assert.ok(ids.includes('facebook'), 'Missing Facebook service');
 });
 
 test('calculateJitter accurately computes latency variance', () => {
@@ -84,6 +85,19 @@ test('detectStreamDrops identifies unexpected stream disconnections', () => {
   const alertsKick = detectStreamDrops(previousStats, currentStatsKickDown);
   assert.equal(alertsKick.length, 1);
   assert.match(alertsKick[0], /Kick/i);
+
+  // Case 5: Facebook dropped
+  const previousStatsWithFb = {
+    ...previousStats,
+    facebook: { channel: 'samo_fb', viewers: 80, isLive: true, loading: false },
+  };
+  const currentStatsFbDown = {
+    ...previousStatsWithFb,
+    facebook: { channel: 'samo_fb', viewers: 0, isLive: false, loading: false },
+  };
+  const alertsFb = detectStreamDrops(previousStatsWithFb, currentStatsFbDown);
+  assert.equal(alertsFb.length, 1);
+  assert.match(alertsFb[0], /Facebook/i);
 });
 
 test('isWidgetStreamActive correctly evaluates stream connection status per platform', () => {
@@ -91,6 +105,7 @@ test('isWidgetStreamActive correctly evaluates stream connection status per plat
     twitch: { channel: 'samo2105', viewers: 0, isLive: false, loading: false },
     kick: { channel: 'samo_kick', viewers: 0, isLive: false, loading: false },
     youtube: { channel: 'SwjSwFWmxl0', viewers: 0, isLive: false, loading: false },
+    facebook: { channel: 'samo_fb', viewers: 0, isLive: false, loading: false },
     total: 0,
   };
 
@@ -99,10 +114,16 @@ test('isWidgetStreamActive correctly evaluates stream connection status per plat
     twitch: { channel: 'samo2105', viewers: 100, isLive: true, loading: false },
   };
 
+  const fbLiveStats = {
+    ...offlineStats,
+    facebook: { channel: 'samo_fb', viewers: 60, isLive: true, loading: false },
+  };
+
   // 1. When all are offline and OBS is inactive
   assert.equal(isWidgetStreamActive('twitch', 'https://twitch.tv/embed/samo2105/chat', offlineStats, false), false);
   assert.equal(isWidgetStreamActive('kick', 'https://kick.com/popout/samo/chat', offlineStats, false), false);
   assert.equal(isWidgetStreamActive('youtube', 'https://youtube.com/live_chat?v=123', offlineStats, false), false);
+  assert.equal(isWidgetStreamActive('facebook', 'https://facebook.com/samo_fb/live', offlineStats, false), false);
   assert.equal(isWidgetStreamActive('eventlist', 'https://streamlabs.com/widgets/event-list/v1/token', offlineStats, false), false);
 
   // 2. When Twitch is live: Twitch widget and general widgets are active
@@ -110,12 +131,18 @@ test('isWidgetStreamActive correctly evaluates stream connection status per plat
   assert.equal(isWidgetStreamActive('eventlist', 'https://streamlabs.com/widgets/event-list/v1/token', twitchLiveStats, false), true);
   assert.equal(isWidgetStreamActive('kick', 'https://kick.com/popout/samo/chat', twitchLiveStats, false), false);
 
-  // 3. When OBS is actively streaming: all widgets are active regardless of platform
+  // 3. When Facebook is live: Facebook widget and general widgets are active
+  assert.equal(isWidgetStreamActive('facebook', 'https://facebook.com/samo_fb/live', fbLiveStats, false), true);
+  assert.equal(isWidgetStreamActive('eventlist', 'https://streamlabs.com/widgets/event-list/v1/token', fbLiveStats, false), true);
+  assert.equal(isWidgetStreamActive('twitch', 'https://twitch.tv/embed/samo2105/chat', fbLiveStats, false), false);
+
+  // 4. When OBS is actively streaming: all widgets are active regardless of platform
   assert.equal(isWidgetStreamActive('twitch', 'https://twitch.tv/embed/samo2105/chat', offlineStats, true), true);
   assert.equal(isWidgetStreamActive('kick', 'https://kick.com/popout/samo/chat', offlineStats, true), true);
+  assert.equal(isWidgetStreamActive('facebook', 'https://facebook.com/samo_fb/live', offlineStats, true), true);
   assert.equal(isWidgetStreamActive('eventlist', 'https://streamlabs.com/widgets/event-list/v1/token', offlineStats, true), true);
 
-  // 4. When stats are null
+  // 5. When stats are null
   assert.equal(isWidgetStreamActive('twitch', 'https://twitch.tv/embed/samo2105/chat', null, false), false);
 });
 
@@ -148,7 +175,7 @@ test('pingServiceEndpoint verifies all individual streaming services', async () 
 test('runFullHealthDiagnostics completes across all services and returns overall rating', async () => {
   const summary = await runFullHealthDiagnostics();
   assert.ok(summary);
-  assert.equal(summary.services.length, 5);
+  assert.equal(summary.services.length, 6);
   assert.ok(['excellent', 'good', 'fair', 'poor', 'offline'].includes(summary.overallRating));
   assert.ok(summary.averageLatencyMs > 0);
   assert.ok(typeof summary.recommendation === 'string' && summary.recommendation.length > 0);

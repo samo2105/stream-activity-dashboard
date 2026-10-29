@@ -8,7 +8,7 @@ export function cleanChannelName(input: string): string {
   return input
     .trim()
     .replace(/^@+/, '')
-    .replace(/^https?:\/\/(www\.)?(twitch\.tv|kick\.com|youtube\.com)\/?/i, '')
+    .replace(/^https?:\/\/(www\.)?(twitch\.tv|kick\.com|youtube\.com|facebook\.com|fb\.watch|fb\.gg)\/?/i, '')
     .replace(/^@/, '')
     .replace(/\/.*$/, '')
     .trim();
@@ -246,12 +246,121 @@ export async function fetchYouTubeViewers(
 }
 
 /**
+ * Fetches Facebook Gaming / Live stream status and concurrent viewer count.
+ * - Level 1 (Accurate): If a Facebook Page Access Token or Client Token is provided, queries official Meta Graph API v19.0.
+ * - Level 2 (Public / Fallback): Queries public DecAPI or Meta oEmbed endpoint to verify active live status.
+ */
+export async function fetchFacebookViewers(
+  channelOrUrl: string,
+  accessToken?: string
+): Promise<{ viewers: number; isLive: boolean; videoId?: string; error?: string }> {
+  const trimmed = (channelOrUrl || '').trim();
+  if (!trimmed) {
+    return { viewers: 0, isLive: false };
+  }
+
+  // Extract video ID or clean channel/page identifier
+  let videoId: string | undefined;
+  const videoMatch = trimmed.match(/(?:\/videos\/|\/watch\/\?v=|v=)(\d+)/i);
+  if (videoMatch && videoMatch[1]) {
+    videoId = videoMatch[1];
+  }
+
+  const clean = cleanChannelName(trimmed);
+
+  // 1. Level 1: Meta Graph API (Official & Exact Concurrent Viewers)
+  if (accessToken) {
+    try {
+      // If we have a specific video ID
+      if (videoId) {
+        const url = `https://graph.facebook.com/v19.0/${videoId}?fields=live_views,status,title&access_token=${encodeURIComponent(accessToken)}`;
+        const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+        if (res.ok) {
+          const data = await res.json();
+          const isLive = data.status === 'LIVE' || data.status === 'LIVE_STOPPED' ? data.status === 'LIVE' : false;
+          const liveViews = Number(data.live_views) || 0;
+          return {
+            viewers: isLive ? liveViews : 0,
+            isLive,
+            videoId,
+          };
+        }
+      }
+
+      // If we have a Page ID or clean handle, query active live_videos on the page
+      const targetPage = clean || trimmed;
+      const pageUrl = `https://graph.facebook.com/v19.0/${encodeURIComponent(targetPage)}/live_videos?status=LIVE_NOW&fields=live_views,id,title&access_token=${encodeURIComponent(accessToken)}`;
+      const pageRes = await fetch(pageUrl, { signal: AbortSignal.timeout(5000) });
+      if (pageRes.ok) {
+        const pageData = await pageRes.json();
+        if (Array.isArray(pageData?.data) && pageData.data.length > 0) {
+          const activeStream = pageData.data[0];
+          return {
+            viewers: Number(activeStream.live_views) || 0,
+            isLive: true,
+            videoId: activeStream.id,
+          };
+        }
+        return { viewers: 0, isLive: false };
+      }
+    } catch {
+      // Fallback to public methods if Graph API throws or times out
+    }
+  }
+
+  // 2. Level 2: Public DecAPI for Facebook Live
+  if (clean) {
+    try {
+      const decRes = await fetch(`https://decapi.me/facebook/viewers/${encodeURIComponent(clean)}`, {
+        signal: AbortSignal.timeout(4000),
+      });
+      if (decRes.ok) {
+        const text = (await decRes.text()).trim();
+        if (!text.toLowerCase().includes('offline') && !text.toLowerCase().includes('error') && !isNaN(Number(text))) {
+          const count = Number(text);
+          return {
+            viewers: count,
+            isLive: count > 0,
+            videoId,
+          };
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  // 3. Level 3: Meta oEmbed endpoint fallback
+  const fullUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+    ? trimmed
+    : `https://www.facebook.com/${clean}/live`;
+
+  try {
+    const oembedUrl = `https://www.facebook.com/plugins/video/oembed.json/?url=${encodeURIComponent(fullUrl)}`;
+    const oembedRes = await fetch(oembedUrl, { signal: AbortSignal.timeout(4000) });
+    if (oembedRes.ok) {
+      const oembedData = await oembedRes.json();
+      const isLive = fullUrl.includes('/live') || (typeof oembedData.html === 'string' && oembedData.html.includes('live'));
+      return {
+        viewers: isLive ? 1 : 0,
+        isLive,
+        videoId,
+      };
+    }
+  } catch {
+    // Ignore
+  }
+
+  return { viewers: 0, isLive: false, videoId };
+}
+
+/**
  * Fetches viewer counts and live states across all configured platforms concurrently.
  */
 export async function fetchAllViewerStats(channels: ChannelsConfig): Promise<ViewerStats> {
   type FetchRes = { viewers: number; isLive: boolean; error?: string; videoId?: string; rawViewers?: number };
   const deductKick = channels.deductKickSelfView ?? true;
-  const [twitchRes, kickRes, ytRes] = await Promise.all([
+  const [twitchRes, kickRes, ytRes, fbRes] = await Promise.all([
     channels.twitch 
       ? fetchTwitchViewers(channels.twitch) 
       : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
@@ -261,11 +370,15 @@ export async function fetchAllViewerStats(channels: ChannelsConfig): Promise<Vie
     channels.youtube || channels.youtubeHandle
       ? fetchYouTubeViewers(channels.youtube, channels.youtubeApiKey, channels.youtubeHandle)
       : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
+    channels.facebook
+      ? fetchFacebookViewers(channels.facebook, channels.facebookAccessToken)
+      : Promise.resolve<FetchRes>({ viewers: 0, isLive: false }),
   ]);
 
   const total = (twitchRes.isLive ? twitchRes.viewers : 0) +
                 (kickRes.isLive ? kickRes.viewers : 0) +
-                (ytRes.isLive ? ytRes.viewers : 0);
+                (ytRes.isLive ? ytRes.viewers : 0) +
+                (fbRes.isLive ? fbRes.viewers : 0);
 
   return {
     twitch: {
@@ -290,6 +403,14 @@ export async function fetchAllViewerStats(channels: ChannelsConfig): Promise<Vie
       loading: false,
       error: ytRes.error,
       videoId: ytRes.videoId,
+    },
+    facebook: {
+      channel: channels.facebook || '',
+      viewers: fbRes.viewers,
+      isLive: fbRes.isLive,
+      loading: false,
+      error: fbRes.error,
+      videoId: fbRes.videoId,
     },
     total,
     lastUpdated: Date.now(),

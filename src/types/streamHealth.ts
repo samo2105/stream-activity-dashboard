@@ -3,7 +3,7 @@ export type HealthRating = 'excellent' | 'good' | 'fair' | 'poor' | 'offline';
 export interface ServiceEndpoint {
   id: string;
   name: string;
-  category: 'cdn' | 'youtube' | 'twitch' | 'kick' | 'streamlabs';
+  category: 'cdn' | 'youtube' | 'twitch' | 'kick' | 'streamlabs' | 'facebook';
   url: string;
   description: string;
 }
@@ -11,7 +11,7 @@ export interface ServiceEndpoint {
 export interface ServiceTestResult {
   id: string;
   name: string;
-  category: 'cdn' | 'youtube' | 'twitch' | 'kick' | 'streamlabs';
+  category: 'cdn' | 'youtube' | 'twitch' | 'kick' | 'streamlabs' | 'facebook';
   targetUrl: string;
   latencyMs: number;
   status: HealthRating;
