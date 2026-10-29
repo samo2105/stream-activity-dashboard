@@ -4,7 +4,6 @@ import {
   Volume2, 
   VolumeX, 
   RotateCw, 
-  ExternalLink, 
   Maximize2, 
   Settings2, 
   Sliders, 
@@ -13,7 +12,8 @@ import {
   Check, 
   Info,
   Youtube,
-  Twitch
+  Twitch,
+  ExternalLink
 } from 'lucide-react';
 import { ThemeMode, PlatformViewerData } from '../types/widget';
 import { 
@@ -25,6 +25,38 @@ import {
 } from '../utils/urlHelper';
 
 export type PreviewPlatformType = 'twitch' | 'kick' | 'youtube' | 'tiktok' | 'facebook';
+
+export const PlatformLogo: React.FC<{ platform: PreviewPlatformType; className?: string }> = ({ 
+  platform, 
+  className = 'w-4 h-4 shrink-0' 
+}) => {
+  switch (platform) {
+    case 'twitch':
+      return <Twitch className={`${className} text-[#9146FF]`} />;
+    case 'kick':
+      return (
+        <svg className={`${className} text-[#53FC18] fill-current`} viewBox="0 0 24 24">
+          <path d="M4 3h4v6.5l4.5-6.5h5l-5.8 8 6.3 10h-5.2L8 13.5V21H4V3z" />
+        </svg>
+      );
+    case 'youtube':
+      return <Youtube className={`${className} text-[#FF0000]`} />;
+    case 'tiktok':
+      return (
+        <svg className={`${className} text-[#FE2C55] fill-current`} viewBox="0 0 24 24">
+          <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 2.312-4.634c.316 0 .62.052.906.148V9.45a6.335 6.335 0 0 0-.906-.065 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.756a8.21 8.21 0 0 0 4.764 1.503V6.814a4.82 4.82 0 0 1-1-.128z"/>
+        </svg>
+      );
+    case 'facebook':
+      return (
+        <svg className={`${className} text-[#1877F2] fill-current`} viewBox="0 0 24 24">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </svg>
+      );
+    default:
+      return <Tv2 className={`${className} text-zinc-400`} />;
+  }
+};
 
 interface PlatformPreviewCardProps {
   platform: PreviewPlatformType;
@@ -69,7 +101,7 @@ const PLATFORM_META: Record<PreviewPlatformType, {
     defaultIngest: 'rtmps://fa723fc1b171.global-contribute.live-video.net:443/app/{stream_key}',
   },
   youtube: {
-    name: 'YouTube Live',
+    name: 'YouTube',
     brandColor: '#FF0000',
     borderActive: 'border-red-500/40 hover:border-red-500/60',
     bgBadge: 'bg-red-500/15 text-red-300 border-red-500/30',
@@ -79,7 +111,7 @@ const PLATFORM_META: Record<PreviewPlatformType, {
     defaultIngest: 'rtmp://a.rtmp.youtube.com/live2',
   },
   tiktok: {
-    name: 'TikTok LIVE',
+    name: 'TikTok',
     brandColor: '#FE2C55',
     borderActive: 'border-pink-500/40 hover:border-pink-500/60',
     bgBadge: 'bg-pink-500/15 text-pink-300 border-pink-500/30',
@@ -89,7 +121,7 @@ const PLATFORM_META: Record<PreviewPlatformType, {
     defaultIngest: 'TikTok Live Studio / RTMP Server',
   },
   facebook: {
-    name: 'Facebook Live',
+    name: 'Facebook',
     brandColor: '#1877F2',
     borderActive: 'border-blue-500/40 hover:border-blue-500/60',
     bgBadge: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
@@ -188,29 +220,6 @@ export const PlatformPreviewCard: React.FC<PlatformPreviewCardProps> = ({
     ? `@${channelHandle.replace(/^@/, '')}`
     : channel ? `@${channel.replace(/^@/, '')}` : 'Sin configurar';
 
-  // Open stream in external tab
-  const getPublicStreamUrl = (): string => {
-    if (!channel) return '#';
-    switch (platform) {
-      case 'twitch':
-        return `https://twitch.tv/${channel.replace(/^@/, '')}`;
-      case 'kick':
-        return `https://kick.com/${channel.replace(/^@/, '')}`;
-      case 'youtube':
-        return viewerData?.videoId 
-          ? `https://www.youtube.com/watch?v=${viewerData.videoId}` 
-          : channelHandle 
-          ? `https://www.youtube.com/@${channelHandle.replace(/^@/, '')}/live` 
-          : `https://www.youtube.com/watch?v=${channel}`;
-      case 'facebook':
-        return channel.startsWith('http') ? channel : `https://facebook.com/${channel}/live`;
-      case 'tiktok':
-        return `https://www.tiktok.com/@${channel.replace(/^@/, '')}/live`;
-      default:
-        return '#';
-    }
-  };
-
   return (
     <div className={`flex flex-col rounded-2xl border transition-all shadow-lg overflow-hidden ${
       isTheaterFocus 
@@ -229,12 +238,8 @@ export const PlatformPreviewCard: React.FC<PlatformPreviewCardProps> = ({
       }`}>
         {/* Left: Platform Identity & Live Status */}
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex items-center gap-1.5 shrink-0">
-            {platform === 'twitch' && <Twitch className="w-4 h-4 text-purple-400" />}
-            {platform === 'youtube' && <Youtube className="w-4 h-4 text-red-500" />}
-            {platform === 'kick' && <span className="w-2.5 h-2.5 rounded-full bg-green-400" />}
-            {platform === 'tiktok' && <span className="w-2.5 h-2.5 rounded-full bg-pink-500" />}
-            {platform === 'facebook' && <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
+          <div className="flex items-center gap-2 shrink-0">
+            <PlatformLogo platform={platform} className="w-4 h-4 shrink-0" />
             <span className="font-bold text-xs tracking-tight">{meta.name}</span>
           </div>
 
@@ -251,9 +256,11 @@ export const PlatformPreviewCard: React.FC<PlatformPreviewCardProps> = ({
                 <span className="font-mono font-semibold ml-0.5">({viewersCount.toLocaleString()})</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-800/60 text-zinc-400 border border-zinc-700/60 shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
-                <span>OFFLINE</span>
+              <span 
+                className="inline-flex items-center p-1 rounded-full text-zinc-500 bg-zinc-800/60 border border-zinc-700/60 shrink-0"
+                title="Offline"
+              >
+                <WifiOff className="w-3 h-3 text-zinc-400" />
               </span>
             )
           ) : (
@@ -346,89 +353,64 @@ export const PlatformPreviewCard: React.FC<PlatformPreviewCardProps> = ({
               </button>
             </>
           )}
-
-          {/* External Link */}
-          {channel && (
-            <a
-              href={getPublicStreamUrl()}
-              target="_blank"
-              rel="noreferrer"
-              className={`p-1.5 rounded-lg border transition-colors ${
-                isLight ? 'text-zinc-500 hover:text-zinc-800 bg-zinc-100 border-zinc-200' : 'text-zinc-400 hover:text-white bg-zinc-900 border-zinc-800'
-              }`}
-              title={`Abrir ${meta.name} en pestaña nueva`}
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-          )}
         </div>
       </div>
 
       {/* Card Body */}
-      <div className="relative min-h-[280px] flex-1 flex flex-col justify-center bg-black/40">
+      <div className="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
         {activeTab === 'player' ? (
           /* TAB 1: Live Video Player */
           !channel ? (
             /* Unconfigured State */
-            <div className="p-8 text-center flex flex-col items-center justify-center gap-3">
-              <div className="p-3 rounded-2xl bg-zinc-800/50 border border-zinc-700/60 text-zinc-400">
-                <Tv2 className="w-7 h-7 opacity-75" />
+            <div className="w-full h-full p-4 text-center flex flex-col items-center justify-center gap-2 bg-zinc-950/90">
+              <div className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400">
+                <Tv2 className="w-6 h-6 opacity-75" />
               </div>
-              <div>
-                <h4 className="text-sm font-semibold">Canal no configurado</h4>
-                <p className="text-xs text-zinc-400 mt-1 max-w-xs">
-                  Agrega tu usuario o ID de {meta.name} para visualizar el stream en directo.
+              <div className="max-w-xs">
+                <h4 className="text-xs font-semibold text-zinc-200">Canal no configurado</h4>
+                <p className="text-[11px] text-zinc-400 mt-0.5">
+                  Agrega tu usuario o ID de {meta.name} para visualizar el stream.
                 </p>
               </div>
               {onOpenProfileModal && (
                 <button
                   type="button"
                   onClick={onOpenProfileModal}
-                  className="mt-1 px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow transition-all"
+                  className="mt-1 px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow transition-all"
                 >
                   Configurar Canal
                 </button>
               )}
             </div>
           ) : !isLive && !forcePreview ? (
-            /* Standby / Offline State */
-            <div className="p-8 text-center flex flex-col items-center justify-center gap-3 animate-fadeIn">
-              <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-500">
-                <WifiOff className="w-7 h-7 opacity-60" />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-zinc-200">
-                  Transmisión Offline en {meta.name}
-                </h4>
-                <p className="text-xs text-zinc-400 mt-1 max-w-xs leading-relaxed">
-                  El reproductor se activará automáticamente al detectar la transmisión en vivo.
-                </p>
+            /* Standby / Offline State - Icon and force preview button only, no text */
+            <div className="w-full h-full p-4 text-center flex flex-col items-center justify-center gap-3 bg-zinc-950/90 animate-fadeIn">
+              <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-500" title="Offline">
+                <WifiOff className="w-8 h-8 opacity-70" />
               </div>
               <button
                 type="button"
                 onClick={() => setForcePreview(true)}
-                className="mt-1 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-700 text-xs font-medium shadow-sm transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 text-xs font-medium shadow-sm transition-all"
               >
                 <Play className="w-3.5 h-3.5 text-purple-400 fill-current" />
-                <span>Cargar reproductor de todos modos</span>
+                <span>Cargar reproductor</span>
               </button>
             </div>
           ) : (
             /* Real Video Player Embed */
-            <div className="w-full h-full relative aspect-video bg-black flex items-center justify-center">
-              <iframe
-                key={`${embedUrl}-${reloadKey}-${isEffectiveMuted}`}
-                src={embedUrl}
-                title={`${meta.name} Live Player`}
-                className="w-full h-full border-0 absolute inset-0"
-                allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                allowFullScreen
-              />
-            </div>
+            <iframe
+              key={`${embedUrl}-${reloadKey}-${isEffectiveMuted}`}
+              src={embedUrl}
+              title={`${meta.name} Live Player`}
+              className="w-full h-full border-0 absolute inset-0"
+              allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+              allowFullScreen
+            />
           )
         ) : (
           /* TAB 2: Stream Configuration Drawer (Próximamente / En Desarrollo) */
-          <div className="p-5 flex-1 flex flex-col justify-between space-y-4 animate-fadeIn">
+          <div className="w-full h-full p-4 flex flex-col justify-between overflow-y-auto bg-zinc-950/95 animate-fadeIn">
             <div>
               <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
                 <div className="flex items-center gap-2">

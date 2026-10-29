@@ -4,7 +4,8 @@ import {
   Radio,
   Activity,
   AlertCircle,
-  Tv2
+  Tv2,
+  WifiOff
 } from 'lucide-react';
 import { ChannelsConfig, ViewerStats, ThemeMode } from '../types/widget';
 import { StreamHealthSummary } from '../types/streamHealth';
@@ -144,7 +145,7 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
                     {stats.twitch.viewers.toLocaleString()}
                   </span>
                 ) : (
-                  <span className="text-zinc-500">Offline</span>
+                  <span title="Offline" className="inline-flex items-center"><WifiOff className="w-3 h-3 text-zinc-500 shrink-0" /></span>
                 )}
               </span>
             ) : (
@@ -176,7 +177,7 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
                     {stats.kick.viewers.toLocaleString()}
                   </span>
                 ) : (
-                  <span className="text-zinc-500">Offline</span>
+                  <span title="Offline" className="inline-flex items-center"><WifiOff className="w-3 h-3 text-zinc-500 shrink-0" /></span>
                 )}
               </span>
             ) : (
@@ -201,7 +202,7 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
                     {stats.youtube.viewers.toLocaleString()}
                   </span>
                 ) : (
-                  <span className="text-zinc-500">Offline</span>
+                  <span title="Offline" className="inline-flex items-center"><WifiOff className="w-3 h-3 text-zinc-500 shrink-0" /></span>
                 )}
               </span>
             ) : (
@@ -226,7 +227,7 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
                     {stats.facebook.viewers.toLocaleString()}
                   </span>
                 ) : (
-                  <span className="text-zinc-500">Offline</span>
+                  <span title="Offline" className="inline-flex items-center"><WifiOff className="w-3 h-3 text-zinc-500 shrink-0" /></span>
                 )}
               </span>
             ) : (
@@ -258,7 +259,7 @@ export const ViewerBar: React.FC<ViewerBarProps> = ({
                     {stats.tiktok.viewers.toLocaleString()}
                   </span>
                 ) : (
-                  <span className="text-zinc-500">Offline</span>
+                  <span title="Offline" className="inline-flex items-center"><WifiOff className="w-3 h-3 text-zinc-500 shrink-0" /></span>
                 )}
               </span>
             ) : (

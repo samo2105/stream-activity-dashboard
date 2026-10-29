@@ -8,11 +8,12 @@ import {
   Maximize2, 
   Play, 
   Square, 
-  Disc
+  Disc,
+  WifiOff
 } from 'lucide-react';
 import { ChannelsConfig, ThemeMode, ViewerStats, PreviewLayoutMode } from '../types/widget';
 import type { ObsConnectionStatus, ObsStreamStats } from '../types/obs';
-import { PlatformPreviewCard, PreviewPlatformType } from './PlatformPreviewCard';
+import { PlatformPreviewCard, PlatformLogo, PreviewPlatformType } from './PlatformPreviewCard';
 import { calculateObsDropRate, formatObsBytes } from '../utils/obsWebSocket';
 
 interface LivePreviewsPageProps {
@@ -221,9 +222,16 @@ export const LivePreviewsPage: React.FC<LivePreviewsPageProps> = ({
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-xs capitalize">{p.key}</span>
-                        {isItemLive && (
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <PlatformLogo platform={p.key} className="w-3.5 h-3.5" />
+                          <span className="font-bold text-xs capitalize truncate">{p.key}</span>
+                        </div>
+                        {isItemLive ? (
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                        ) : (
+                          <span title="Offline" className="shrink-0">
+                            <WifiOff className="w-3 h-3 text-zinc-500" />
+                          </span>
                         )}
                       </div>
                       <span className="text-[11px] text-zinc-400 block truncate">
@@ -276,15 +284,15 @@ export const LivePreviewsPage: React.FC<LivePreviewsPageProps> = ({
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                   obsStatus === 'connected'
                     ? obsStats?.outputActive
-                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                      : 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                    : 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
                     : 'bg-zinc-800 text-zinc-400 border-zinc-700'
                 }`}>
                   {obsStatus === 'connected' ? (obsStats?.outputActive ? 'EMITIENDO EN DIRECTO' : 'CONECTADO / LISTO') : 'DESCONECTADO'}
                 </span>
               </div>
 
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+              <div className="relative w-full aspect-video p-4 flex flex-col justify-between overflow-y-auto">
                 {obsStatus === 'connected' ? (
                   <div className="space-y-4">
                     {/* Live Output Stats Grid */}
