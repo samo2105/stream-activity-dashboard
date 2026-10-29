@@ -70,7 +70,7 @@ interface PlatformPreviewCardProps {
   onOpenProfileModal?: () => void;
 }
 
-const PLATFORM_META: Record<PreviewPlatformType, {
+export const PLATFORM_META: Record<PreviewPlatformType, {
   name: string;
   brandColor: string;
   borderActive: string;

@@ -17,7 +17,7 @@ export type CounterSize = 'sm' | 'md' | 'lg' | 'xl';
 
 export type ActiveView = 'dashboard' | 'previews';
 
-export type PreviewLayoutMode = 'grid' | 'theater';
+export type PreviewLayoutMode = 'grid' | 'list' | 'theater';
 
 export interface PlatformStreamConfigDraft {
   title?: string;

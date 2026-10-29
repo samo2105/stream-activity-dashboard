@@ -8,9 +8,10 @@ import {
   Check,
   Tv2,
   Sliders,
-  Activity
+  Activity,
+  Radio
 } from 'lucide-react';
-import { DashboardConfig, ChannelsConfig, CounterSize } from '../types/widget';
+import { DashboardConfig, CounterSize } from '../types/widget';
 import { exportConfigToFile, parseConfigFile } from '../utils/storage';
 
 interface SettingsModalProps {
@@ -21,6 +22,7 @@ interface SettingsModalProps {
   onResetDefaults: () => void;
   onOpenHealthModal?: () => void;
   onOpenObsModal?: () => void;
+  onOpenChannelsModal?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -31,21 +33,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onResetDefaults,
   onOpenHealthModal,
   onOpenObsModal,
+  onOpenChannelsModal,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
-  const [channels, setChannels] = useState<ChannelsConfig>({
-    twitch: config.channels?.twitch || '',
-    kick: config.channels?.kick || '',
-    youtube: config.channels?.youtube || '',
-    youtubeHandle: config.channels?.youtubeHandle,
-    youtubeApiKey: config.channels?.youtubeApiKey,
-    facebook: config.channels?.facebook || '',
-    facebookAccessToken: config.channels?.facebookAccessToken,
-    tiktok: config.channels?.tiktok || '',
-    streamlabsToken: config.channels?.streamlabsToken,
-    deductKickSelfView: config.channels?.deductKickSelfView ?? true,
-  });
 
   if (!isOpen) return null;
 
@@ -64,7 +55,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const parsed = parseConfigFile(content);
       if (parsed) {
         onUpdateConfig(parsed);
-        setChannels(parsed.channels);
         setStatusMsg('Configuración importada y aplicada exitosamente.');
       } else {
         alert('El archivo JSON seleccionado no tiene un formato válido para StreamPulse.');
@@ -72,14 +62,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     };
     reader.readAsText(file);
     e.target.value = '';
-  };
-
-  const handleSaveChannels = () => {
-    onUpdateConfig({
-      ...config,
-      channels,
-    });
-    setStatusMsg('Canales para el conteo de viewers guardados.');
   };
 
   const handleReset = () => {
@@ -95,8 +77,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950/60">
           <div>
-            <h2 className="text-base font-bold text-white">Configuración del Panel</h2>
-            <p className="text-xs text-zinc-400">Canales de viewers, respaldo y privacidad</p>
+            <h2 className="text-base font-bold text-white">Ajustes del Sistema y Respaldo</h2>
+            <p className="text-xs text-zinc-400">Respaldo de widgets, diagnósticos y privacidad local</p>
           </div>
           <button
             type="button"
@@ -116,124 +98,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
-          {/* Channels Configuration for Viewer Counter */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
-              <Tv2 className="w-4 h-4 text-purple-400" />
-              Canales para Conteo de Viewers
-            </h3>
-            <p className="text-xs text-zinc-400">
-              Ingresa los nombres de tus canales para mostrar los espectadores en vivo de cada plataforma en la barra superior.
-            </p>
-
-            <div className="space-y-2.5 pt-1">
-              <div>
-                <label className="block text-[11px] font-medium text-purple-300 mb-1">
-                  Usuario de Twitch:
-                </label>
-                <input
-                  type="text"
-                  placeholder="ej. samo2105"
-                  value={channels.twitch}
-                  onChange={(e) => setChannels({ ...channels, twitch: e.target.value })}
-                  className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-medium text-green-300 mb-1">
-                  Usuario de Kick:
-                </label>
-                <input
-                  type="text"
-                  placeholder="ej. samo2105"
-                  value={channels.kick}
-                  onChange={(e) => setChannels({ ...channels, kick: e.target.value })}
-                  className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-green-500"
-                />
-                <div 
-                  className="flex items-start gap-2 pt-2 cursor-pointer select-none"
-                  onClick={() => setChannels({ ...channels, deductKickSelfView: !(channels.deductKickSelfView ?? true) })}
-                >
-                  <input
-                    type="checkbox"
-                    id="settingsDeductKickSelfViewCheck"
-                    checked={channels.deductKickSelfView ?? true}
-                    onChange={(e) => setChannels({ ...channels, deductKickSelfView: e.target.checked })}
-                    className="w-3.5 h-3.5 mt-0.5 rounded text-green-600 focus:ring-green-500 border-zinc-700 bg-zinc-900 shrink-0"
-                  />
-                  <div>
-                    <label htmlFor="settingsDeductKickSelfViewCheck" className="text-[11px] text-zinc-300 cursor-pointer">
-                      Descontar espectador propio en Kick (-1)
-                    </label>
-                    <p className="text-[10px] text-zinc-500 leading-tight">
-                      Kick suma automáticamente tu propia vista previa o dock en OBS. Activa esta opción para descontarla.
-                    </p>
-                  </div>
+          {/* Quick link to Channels Modal */}
+          {onOpenChannelsModal && (
+            <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <Radio className="w-4 h-4 text-purple-400 shrink-0" />
+                <div>
+                  <span className="text-xs font-bold text-white block">Canales de Transmisión</span>
+                  <span className="text-[11px] text-zinc-400 block">Gestiona tus cuentas de Twitch, Kick, YouTube, TikTok y Facebook</span>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-[11px] font-medium text-red-300 mb-1">
-                  ID de Video o Stream de YouTube:
-                </label>
-                <input
-                  type="text"
-                  placeholder="ej. dQw4w9WgXcQ"
-                  value={channels.youtube}
-                  onChange={(e) => setChannels({ ...channels, youtube: e.target.value })}
-                  className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-red-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-medium text-blue-300 mb-1">
-                  Página o Canal de Facebook Live:
-                </label>
-                <input
-                  type="text"
-                  placeholder="ej. TuPagina o https://facebook.com/TuPagina/live"
-                  value={channels.facebook || ''}
-                  onChange={(e) => setChannels({ ...channels, facebook: e.target.value })}
-                  className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-medium text-blue-300 mb-1">
-                  Facebook Page Access Token (Graph API - Opcional):
-                </label>
-                <input
-                  type="password"
-                  placeholder="EAA... (Token de acceso para métricas en vivo)"
-                  value={channels.facebookAccessToken || ''}
-                  onChange={(e) => setChannels({ ...channels, facebookAccessToken: e.target.value })}
-                  className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-medium text-pink-300 mb-1">
-                  Usuario de TikTok Live (Modo B):
-                </label>
-                <input
-                  type="text"
-                  placeholder="ej. @usuario o tu usuario de TikTok"
-                  value={channels.tiktok || ''}
-                  onChange={(e) => setChannels({ ...channels, tiktok: e.target.value })}
-                  className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-pink-500"
-                />
-              </div>
-
               <button
                 type="button"
-                onClick={handleSaveChannels}
-                className="mt-1 w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold transition-colors"
+                onClick={() => {
+                  onClose();
+                  onOpenChannelsModal();
+                }}
+                className="shrink-0 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold shadow transition-colors"
               >
-                Guardar Canales
+                Abrir Canales
               </button>
             </div>
-          </div>
+          )}
 
           {/* Viewer Counters Sizing Setting */}
           <div className="space-y-3">

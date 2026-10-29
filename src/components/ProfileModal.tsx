@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Radio, Youtube, Twitch, HelpCircle, Check, Loader2 } from 'lucide-react';
+import { X, Save, Radio, HelpCircle, Check, Loader2 } from 'lucide-react';
 import { ChannelsConfig, WidgetItem } from '../types/widget';
 import { DEFAULT_STREAMLABS_TOKEN } from '../utils/presets';
 import { fetchYouTubeViewers } from '../utils/viewers';
+import { PlatformLogo } from './PlatformPreviewCard';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -200,8 +201,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               <Radio className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Configurar Mis Canales de Stream</h2>
-              <p className="text-xs text-zinc-400">Personaliza tus nombres de usuario y transmisiones</p>
+              <h2 className="text-base font-bold text-white">Canales de Transmisión</h2>
+              <p className="text-xs text-zinc-400">Personaliza tus cuentas para Live Previews, chat y telemetría</p>
             </div>
           </div>
           <button
@@ -215,12 +216,72 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
+          {/* Twitch Section */}
+          <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-purple-300 flex items-center gap-2 uppercase tracking-wider">
+                <PlatformLogo platform="twitch" className="w-4 h-4 shrink-0" />
+                <span>Twitch</span>
+              </label>
+              <span className="text-[10px] text-purple-400/80 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20 font-medium">
+                GQL + Embed
+              </span>
+            </div>
+            <input
+              type="text"
+              placeholder="ej. samo2105 o tu usuario de Twitch"
+              value={twitchChannel}
+              onChange={(e) => setTwitchChannel(e.target.value)}
+              className="w-full px-3 py-1.5 bg-zinc-950 border border-purple-500/30 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-purple-400"
+            />
+          </div>
+
+          {/* Kick Section */}
+          <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-green-300 flex items-center gap-2 uppercase tracking-wider">
+                <PlatformLogo platform="kick" className="w-4 h-4 shrink-0" />
+                <span>Kick</span>
+              </label>
+              <span className="text-[10px] text-green-400/80 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 font-medium">
+                API + oEmbed
+              </span>
+            </div>
+            <input
+              type="text"
+              placeholder="ej. tu canal de Kick (sin @)"
+              value={kickChannel}
+              onChange={(e) => setKickChannel(e.target.value)}
+              className="w-full px-3 py-1.5 bg-zinc-950 border border-green-500/30 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-green-400"
+            />
+            <div 
+              className="flex items-start gap-2.5 pt-1 cursor-pointer select-none"
+              onClick={() => setDeductKickSelfView(!deductKickSelfView)}
+            >
+              <input
+                type="checkbox"
+                id="deductKickSelfViewCheck"
+                checked={deductKickSelfView}
+                onChange={(e) => setDeductKickSelfView(e.target.checked)}
+                className="w-4 h-4 mt-0.5 rounded text-green-600 focus:ring-green-500 border-zinc-700 bg-zinc-900 shrink-0"
+              />
+              <div>
+                <label htmlFor="deductKickSelfViewCheck" className="text-xs font-medium text-zinc-200 cursor-pointer">
+                  Descontar espectador propio en Kick (-1)
+                </label>
+                <p className="text-[10px] text-zinc-400 leading-tight mt-0.5">
+                  Kick suma automáticamente la vista de tu propio panel/OBS como espectador. Actívalo para ver solo audiencia orgánica real.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* YouTube Section */}
           <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-red-300 flex items-center gap-1.5 uppercase tracking-wider">
-                <Youtube className="w-4 h-4 text-red-400" />
-                Canal de YouTube
+              <label className="text-xs font-bold text-red-300 flex items-center gap-2 uppercase tracking-wider">
+                <PlatformLogo platform="youtube" className="w-4 h-4 shrink-0" />
+                <span>YouTube</span>
               </label>
               <button
                 type="button"
@@ -290,100 +351,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             )}
           </div>
 
-          {/* Twitch Section */}
-          <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2">
-            <label className="text-xs font-bold text-purple-300 flex items-center gap-1.5 uppercase tracking-wider">
-              <Twitch className="w-4 h-4 text-purple-400" />
-              Canal de Twitch
-            </label>
-            <input
-              type="text"
-              placeholder="ej. samo2105 o tu usuario de Twitch"
-              value={twitchChannel}
-              onChange={(e) => setTwitchChannel(e.target.value)}
-              className="w-full px-3 py-1.5 bg-zinc-950 border border-purple-500/30 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-purple-400"
-            />
-          </div>
-
-          {/* Kick Section */}
-          <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 space-y-3">
-            <label className="text-xs font-bold text-green-300 flex items-center gap-1.5 uppercase tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
-              Canal de Kick
-            </label>
-            <input
-              type="text"
-              placeholder="ej. tu canal de Kick (sin @)"
-              value={kickChannel}
-              onChange={(e) => setKickChannel(e.target.value)}
-              className="w-full px-3 py-1.5 bg-zinc-950 border border-green-500/30 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-green-400"
-            />
-            <div 
-              className="flex items-start gap-2.5 pt-1 cursor-pointer select-none"
-              onClick={() => setDeductKickSelfView(!deductKickSelfView)}
-            >
-              <input
-                type="checkbox"
-                id="deductKickSelfViewCheck"
-                checked={deductKickSelfView}
-                onChange={(e) => setDeductKickSelfView(e.target.checked)}
-                className="w-4 h-4 mt-0.5 rounded text-green-600 focus:ring-green-500 border-zinc-700 bg-zinc-900 shrink-0"
-              />
-              <div>
-                <label htmlFor="deductKickSelfViewCheck" className="text-xs font-medium text-zinc-200 cursor-pointer">
-                  Descontar espectador propio en Kick (-1)
-                </label>
-                <p className="text-[10px] text-zinc-400 leading-tight mt-0.5">
-                  Kick suma automáticamente la vista de tu propio panel/OBS como espectador. Actívalo para ver solo audiencia orgánica real.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Facebook Section */}
-          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-blue-300 flex items-center gap-1.5 uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" />
-                Página / Canal de Facebook Live
-              </label>
-              <span className="text-[10px] text-blue-400/80 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 font-medium">
-                Facebook Gaming
-              </span>
-            </div>
-            <input
-              type="text"
-              placeholder="ej. TuPagina o https://facebook.com/TuPagina/live"
-              value={facebookChannel}
-              onChange={(e) => setFacebookChannel(e.target.value)}
-              className="w-full px-3 py-1.5 bg-zinc-950 border border-blue-500/30 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-400"
-            />
-            <div className="space-y-1 pt-1">
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] font-medium text-zinc-300">
-                  Page Access Token (Graph API - Opcional):
-                </label>
-                <span className="text-[10px] text-zinc-500">Métricas exactas de viewers</span>
-              </div>
-              <input
-                type="password"
-                placeholder="EAA... (Token de acceso de página o usuario)"
-                value={facebookAccessToken}
-                onChange={(e) => setFacebookAccessToken(e.target.value)}
-                className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-blue-400 font-mono"
-              />
-              <p className="text-[10px] text-zinc-400 leading-tight">
-                Permite leer en tiempo real los concurrent viewers de Facebook Graph API v19.0. Si lo dejas vacío, StreamPulse detectará el estado en directo mediante oEmbed.
-              </p>
-            </div>
-          </div>
-
           {/* TikTok Section */}
           <div className="p-4 rounded-xl bg-pink-500/10 border border-pink-500/20 space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-pink-300 flex items-center gap-1.5 uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full bg-pink-400 inline-block" />
-                Canal de TikTok Live (Modo B)
+              <label className="text-xs font-bold text-pink-300 flex items-center gap-2 uppercase tracking-wider">
+                <PlatformLogo platform="tiktok" className="w-4 h-4 shrink-0" />
+                <span>TikTok LIVE (Modo B)</span>
               </label>
               <button
                 type="button"
@@ -420,6 +393,44 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <p className="text-[10px] text-zinc-400 leading-tight">
               Permite previsualizar tu reproductor de TikTok LIVE (Live Preview) y monitorear tus espectadores en vivo en la barra superior.
             </p>
+          </div>
+
+          {/* Facebook Section */}
+          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-blue-300 flex items-center gap-2 uppercase tracking-wider">
+                <PlatformLogo platform="facebook" className="w-4 h-4 shrink-0" />
+                <span>Facebook Live</span>
+              </label>
+              <span className="text-[10px] text-blue-400/80 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 font-medium">
+                Facebook Gaming
+              </span>
+            </div>
+            <input
+              type="text"
+              placeholder="ej. TuPagina o https://facebook.com/TuPagina/live"
+              value={facebookChannel}
+              onChange={(e) => setFacebookChannel(e.target.value)}
+              className="w-full px-3 py-1.5 bg-zinc-950 border border-blue-500/30 rounded-lg text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-blue-400"
+            />
+            <div className="space-y-1 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-medium text-zinc-300">
+                  Page Access Token (Graph API - Opcional):
+                </label>
+                <span className="text-[10px] text-zinc-500">Métricas exactas de viewers</span>
+              </div>
+              <input
+                type="password"
+                placeholder="EAA... (Token de acceso de página o usuario)"
+                value={facebookAccessToken}
+                onChange={(e) => setFacebookAccessToken(e.target.value)}
+                className="w-full px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-blue-400 font-mono"
+              />
+              <p className="text-[10px] text-zinc-400 leading-tight">
+                Permite leer en tiempo real los concurrent viewers de Facebook Graph API v19.0. Si lo dejas vacío, StreamPulse detectará el estado en directo mediante oEmbed.
+              </p>
+            </div>
           </div>
 
           {/* Streamlabs Section */}

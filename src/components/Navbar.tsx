@@ -4,13 +4,15 @@ import {
   Github, 
   Tv2,
   Layers,
-  Video
+  Video,
+  Radio
 } from 'lucide-react';
 import { ThemeMode, ActiveView } from '../types/widget';
 
 interface NavbarProps {
   totalWidgets: number;
   onOpenSettingsModal: () => void;
+  onOpenChannelsModal: () => void;
   themeMode?: ThemeMode;
   activeView: ActiveView;
   onViewChange: (view: ActiveView) => void;
@@ -20,6 +22,7 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   totalWidgets,
   onOpenSettingsModal,
+  onOpenChannelsModal,
   themeMode = 'normal',
   activeView,
   onViewChange,
@@ -123,7 +126,22 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          {/* Settings / Backup */}
+          {/* Channels Configuration Button */}
+          <button
+            type="button"
+            onClick={onOpenChannelsModal}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+              isLight 
+                ? 'text-purple-700 bg-purple-50 hover:bg-purple-100 border-purple-200 shadow-sm' 
+                : 'text-purple-300 bg-purple-950/40 hover:bg-purple-900/50 border-purple-500/30 hover:border-purple-500/50 shadow-sm'
+            }`}
+            title="Configurar Canales y Cuentas de Stream"
+          >
+            <Radio className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+            <span>Canales</span>
+          </button>
+
+          {/* Settings / System / Backup */}
           <button
             type="button"
             onClick={onOpenSettingsModal}
@@ -132,7 +150,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ? 'text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200' 
                 : 'text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800'
             }`}
-            title="Configuración y Copia de Seguridad"
+            title="Ajustes del Sistema y Respaldo"
           >
             <Settings className="w-4 h-4" />
           </button>

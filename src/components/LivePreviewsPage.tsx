@@ -9,11 +9,16 @@ import {
   Play, 
   Square, 
   Disc,
-  WifiOff
+  WifiOff,
+  List,
+  Sliders,
+  CheckCheck,
+  Copy
 } from 'lucide-react';
 import { ChannelsConfig, ThemeMode, ViewerStats, PreviewLayoutMode } from '../types/widget';
 import type { ObsConnectionStatus, ObsStreamStats } from '../types/obs';
 import { PlatformPreviewCard, PlatformLogo, PreviewPlatformType } from './PlatformPreviewCard';
+import { PlatformListCard } from './PlatformListCard';
 import { calculateObsDropRate, formatObsBytes } from '../utils/obsWebSocket';
 
 interface LivePreviewsPageProps {
@@ -43,6 +48,68 @@ export const LivePreviewsPage: React.FC<LivePreviewsPageProps> = ({
   const [theaterFocus, setTheaterFocus] = useState<PreviewPlatformType>('twitch');
   const [isGlobalMuted, setIsGlobalMuted] = useState<boolean>(true);
   const [globalReloadKey, setGlobalReloadKey] = useState<number>(0);
+
+  // Shared Stream Drafts for Title, Category and Tags alignment across platforms
+  const [streamDrafts, setStreamDrafts] = useState<Record<string, { title: string; category: string; tags: string }>>(() => {
+    try {
+      const saved = localStorage.getItem('streampulse_stream_drafts');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return {
+      twitch: { title: '', category: '', tags: '' },
+      kick: { title: '', category: '', tags: '' },
+      youtube: { title: '', category: '', tags: '' },
+      tiktok: { title: '', category: '', tags: '' },
+      facebook: { title: '', category: '', tags: '' },
+    };
+  });
+
+  const handleUpdateDraft = (platformKey: string, field: 'title' | 'category' | 'tags', value: string) => {
+    setStreamDrafts((prev) => {
+      const updated = {
+        ...prev,
+        [platformKey]: {
+          ...(prev[platformKey] || { title: '', category: '', tags: '' }),
+          [field]: value,
+        },
+      };
+      try {
+        localStorage.setItem('streampulse_stream_drafts', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+  };
+
+  const handleSyncAllFrom = (sourceKey: string) => {
+    const source = streamDrafts[sourceKey] || { title: '', category: '', tags: '' };
+    setStreamDrafts(() => {
+      const updated: Record<string, { title: string; category: string; tags: string }> = {};
+      ['twitch', 'kick', 'youtube', 'tiktok', 'facebook'].forEach((key) => {
+        updated[key] = {
+          title: source.title,
+          category: source.category,
+          tags: source.tags,
+        };
+      });
+      try {
+        localStorage.setItem('streampulse_stream_drafts', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+  };
+
+  const draftValues = Object.values(streamDrafts);
+  const firstTitle = draftValues[0]?.title?.trim() || '';
+  const allTitlesMatch = Boolean(
+    firstTitle &&
+    draftValues.every((d) => (d.title?.trim() || '') === firstTitle)
+  );
 
   const isLight = themeMode === 'light';
   const isDark = themeMode === 'dark';
@@ -113,7 +180,7 @@ export const LivePreviewsPage: React.FC<LivePreviewsPageProps> = ({
 
           {/* Right: Controls & Buttons */}
           <div className="flex items-center gap-2">
-            {/* Layout Mode: Grid vs Theater */}
+            {/* Layout Mode: Grid vs List vs Theater */}
             <div className={`flex items-center border rounded-lg p-0.5 text-xs ${
               isLight ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-900 border-zinc-800'
             }`}>
@@ -129,6 +196,19 @@ export const LivePreviewsPage: React.FC<LivePreviewsPageProps> = ({
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
                 <span>Mosaico</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLayoutMode('list')}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded font-medium transition-all ${
+                  layoutMode === 'list'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : isLight ? 'text-zinc-600 hover:text-zinc-900' : 'text-zinc-400 hover:text-white'
+                }`}
+                title="Vista de lista: reproductor a la izquierda y configuración / datos a la derecha para contrastar y alinear"
+              >
+                <List className="w-3.5 h-3.5" />
+                <span>Lista</span>
               </button>
               <button
                 type="button"
@@ -240,6 +320,187 @@ export const LivePreviewsPage: React.FC<LivePreviewsPageProps> = ({
                     </button>
                   );
                 })}
+              </div>
+            </div>
+          </div>
+        ) : layoutMode === 'list' ? (
+          /* LIST / CONTRAST & ALIGNMENT MODE */
+          <div className="space-y-5 animate-fadeIn">
+            {/* Top Contrast & Alignment Info Banner */}
+            <div className={`p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3 shadow-md ${
+              isLight ? 'bg-white border-zinc-200' : 'bg-zinc-900/90 border-zinc-800'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  <Sliders className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold flex items-center gap-2">
+                    <span>Alineación de Streams & Stream Managers</span>
+                    {allTitlesMatch && firstTitle ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        <CheckCheck className="w-3 h-3" />
+                        <span>Títulos 100% Alineados</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                        Modo Comparativa
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Contrasta a la izquierda el reproductor en tiempo real y a la derecha los datos de stream y el acceso directo al Stream Manager de cada plataforma.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSyncAllFrom('twitch')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow transition-all"
+                  title="Sincronizar el título y categoría de Twitch hacia Kick, YouTube, TikTok y Facebook"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Alinear Todos con Twitch</span>
+                </button>
+              </div>
+            </div>
+
+            {/* List Rows */}
+            <div className="space-y-4">
+              {platforms.map((p) => {
+                const draft = streamDrafts[p.key] || { title: '', category: '', tags: '' };
+                return (
+                  <PlatformListCard
+                    key={`${p.key}-${globalReloadKey}`}
+                    platform={p.key}
+                    channel={p.channel}
+                    channelHandle={p.channelHandle}
+                    viewerData={p.viewerData}
+                    themeMode={themeMode}
+                    isGlobalMuted={isGlobalMuted}
+                    onOpenProfileModal={onOpenProfileModal}
+                    draftTitle={draft.title}
+                    draftCategory={draft.category}
+                    draftTags={draft.tags}
+                    onUpdateDraft={(field, val) => handleUpdateDraft(p.key, field, val)}
+                    onSyncToAll={() => handleSyncAllFrom(p.key)}
+                    allTitlesMatch={allTitlesMatch}
+                  />
+                );
+              })}
+
+              {/* OBS Studio Row in List View */}
+              <div className={`rounded-2xl border transition-all shadow-lg overflow-hidden ${
+                isLight ? 'bg-white border-zinc-200 text-zinc-900' : 'bg-zinc-900/90 border-zinc-800 text-zinc-100'
+              }`}>
+                <div className={`px-4 py-3 border-b flex items-center justify-between gap-2.5 ${
+                  isLight ? 'bg-zinc-50 border-zinc-200' : 'bg-zinc-950/70 border-zinc-800'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
+                      <Tv2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-xs">OBS Studio Output Monitor</h3>
+                      <span className="text-[10px] text-zinc-400 block">WebSocket v5 Local Telemetry</span>
+                    </div>
+                  </div>
+
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    obsStatus === 'connected'
+                      ? obsStats?.outputActive
+                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                        : 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                      : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                  }`}>
+                    {obsStatus === 'connected' ? (obsStats?.outputActive ? 'EMITIENDO EN DIRECTO' : 'CONECTADO / LISTO') : 'DESCONECTADO'}
+                  </span>
+                </div>
+
+                <div className="p-4 grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                  <div className="lg:col-span-6 xl:col-span-5">
+                    {/* Live Stats */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="p-2.5 rounded-xl bg-zinc-950/70 border border-zinc-800 text-center">
+                        <span className="text-[10px] text-zinc-500 block">Tiempo Emisión</span>
+                        <span className="text-xs font-bold font-mono text-purple-400">
+                          {obsStats?.outputTimecode || '00:00:00'}
+                        </span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-zinc-950/70 border border-zinc-800 text-center">
+                        <span className="text-[10px] text-zinc-500 block">FPS</span>
+                        <span className="text-xs font-bold font-mono text-emerald-400">
+                          {Math.round(obsStats?.fps || 60)} FPS
+                        </span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-zinc-950/70 border border-zinc-800 text-center">
+                        <span className="text-[10px] text-zinc-500 block">Datos Emitidos</span>
+                        <span className="text-xs font-bold font-mono text-amber-400">
+                          {formatObsBytes(obsStats?.outputBytes || 0)}
+                        </span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-zinc-950/70 border border-zinc-800 text-center">
+                        <span className="text-[10px] text-zinc-500 block">Cuadros Perdidos</span>
+                        {(() => {
+                          const dropRate = obsStats ? calculateObsDropRate(obsStats.outputSkippedFrames, obsStats.outputTotalFrames) : 0;
+                          return (
+                            <span className={`text-xs font-bold font-mono ${
+                              dropRate > 2 ? 'text-rose-400' : 'text-zinc-300'
+                            }`}>
+                              {obsStats?.outputSkippedFrames || 0} ({dropRate.toFixed(1)}%)
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-6 xl:col-span-7 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-1">
+                      {onToggleObsStream && (
+                        <button
+                          type="button"
+                          onClick={onToggleObsStream}
+                          className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow ${
+                            obsStats?.outputActive
+                              ? 'bg-rose-600 hover:bg-rose-500 text-white'
+                              : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                          }`}
+                        >
+                          {obsStats?.outputActive ? <Square className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+                          <span>{obsStats?.outputActive ? 'Detener Emisión OBS' : 'Iniciar Emisión OBS'}</span>
+                        </button>
+                      )}
+
+                      {onToggleObsRecord && (
+                        <button
+                          type="button"
+                          onClick={onToggleObsRecord}
+                          className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow ${
+                            obsStats?.isRecording
+                              ? 'bg-rose-600 hover:bg-rose-500 text-white'
+                              : 'bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700'
+                          }`}
+                        >
+                          <Disc className="w-3.5 h-3.5" />
+                          <span>{obsStats?.isRecording ? 'Detener Grabación' : 'Grabar en OBS'}</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {onOpenObsModal && (
+                      <button
+                        type="button"
+                        onClick={onOpenObsModal}
+                        className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-semibold transition-all shadow-sm"
+                      >
+                        Ajustes OBS
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

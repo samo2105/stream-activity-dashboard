@@ -390,6 +390,7 @@ export function App() {
       {/* Top Navigation */}
       <Navbar
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
+        onOpenChannelsModal={() => setIsProfileModalOpen(true)}
         totalWidgets={config.widgets.length}
         themeMode={currentThemeMode}
         activeView={activeView}
@@ -519,6 +520,10 @@ export function App() {
         config={config}
         onUpdateConfig={setConfig}
         onResetDefaults={handleResetDefaults}
+        onOpenChannelsModal={() => {
+          setIsSettingsModalOpen(false);
+          setIsProfileModalOpen(true);
+        }}
         onOpenHealthModal={() => {
           setIsSettingsModalOpen(false);
           setIsHealthModalOpen(true);
