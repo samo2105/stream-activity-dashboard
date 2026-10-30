@@ -303,6 +303,9 @@ export function generateYouTubePlayerEmbedUrl(videoIdOrUrl: string, muted: boole
     videoId = clean.replace(/^@+/, '');
   }
 
+  // Clean any residual query parameters, hash fragments, or trailing slashes
+  videoId = videoId.split('?')[0].split('&')[0].split('#')[0].replace(/\/+$/, '').trim();
+
   return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1&mute=${muted ? 1 : 0}&enablejsapi=1&rel=0`;
 }
 

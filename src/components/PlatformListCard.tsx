@@ -227,7 +227,8 @@ export const PlatformListCard: React.FC<PlatformListCardProps> = ({
                 src={embedUrl}
                 title={`${meta.name} List Live Player`}
                 className="w-full h-full border-0 absolute inset-0"
-                allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
                 allowFullScreen
               />
             )}

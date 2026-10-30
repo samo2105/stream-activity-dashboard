@@ -470,7 +470,7 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({
               title={widget.title}
               onLoad={() => setIsLoading(false)}
               className="border-0"
-              referrerPolicy="no-referrer"
+              referrerPolicy={widget.platform === 'streamlabs' || widget.platform === 'eventlist' || widget.platform === 'chatbox' ? 'no-referrer' : 'strict-origin-when-cross-origin'}
               style={{
                 position: 'absolute',
                 top: 0,

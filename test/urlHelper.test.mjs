@@ -114,6 +114,18 @@ test('generateYouTubePlayerEmbedUrl handles direct IDs, full URLs, and muted fla
     fromShortUrl,
     'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1&enablejsapi=1&rel=0'
   );
+
+  const fromDirtyId = generateYouTubePlayerEmbedUrl('7aijN13K2nI?si=tracking123&t=10', true);
+  assert.equal(
+    fromDirtyId,
+    'https://www.youtube.com/embed/7aijN13K2nI?autoplay=1&mute=1&enablejsapi=1&rel=0'
+  );
+
+  const fromSlashUrl = generateYouTubePlayerEmbedUrl('https://www.youtube.com/live/7aijN13K2nI/', false);
+  assert.equal(
+    fromSlashUrl,
+    'https://www.youtube.com/embed/7aijN13K2nI?autoplay=1&mute=0&enablejsapi=1&rel=0'
+  );
 });
 
 test('generateKickPlayerEmbedUrl generates kick player with clean channel and mute state', () => {
